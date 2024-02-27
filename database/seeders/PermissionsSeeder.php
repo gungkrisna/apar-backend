@@ -49,19 +49,38 @@ class PermissionsSeeder extends Seeder
             "create products",
             "update products",
             "delete products",
-            
+
+            "access categories",
+            "create categories",
+            "update categories",
+            "delete categories",
+            "force delete categories",
+            "restore categories",
         ];
 
         foreach ($permissions as $permission) {
-            Permission::create([
-                "name" => $permission
-            ]);
+            if (!Permission::where("name", $permission)->first()) {
+                Permission::create([
+                    "name" => $permission
+                ]);
+            }
         }
 
-        Role::create(["name" => "Super Admin"])->givePermissionTo(Permission::all());
+        $superAdminRole = Role::where("name", "Super Admin")->first();
+
+        if(!$superAdminRole){
+            $superAdminRole = Role::create(["name" => "Super Admin"]);
+        }
+
+        $superAdminRole->givePermissionTo(Permission::all());
 
         // Staff Permission
-        $staffRole = Role::create(["name" => "Staff"]);
+
+        $staffRole = Role::where("name", "Staff")->first();
+
+        if(!$staffRole){
+            $staffRole = Role::create(["name" => "Staff"]);
+        }
 
         $staffPermissions = [
             "access suppliers",
@@ -75,8 +94,13 @@ class PermissionsSeeder extends Seeder
         }
 
         // Customer Permission
-        $customerRole = Role::create(["name" => "Customer"]);
 
+        $customerRole = Role::where("name", "Customer")->first();
+
+        if(!$customerRole){
+            $customerRole = Role::create(["name" => "Customer"]);
+        }
+        
         $customerPermissions = [
             "access products",
         ];

@@ -23,11 +23,10 @@ class ProfilePhotoController extends Controller
             Storage::disk('public')->delete($user->photo);
         }
 
-
         $user->photo = $photoPath;
         $user->save();
 
-        ResponseFormatter::success(data: [
+        return ResponseFormatter::success(data: [
             'photo_url' => Storage::url($user->photo),
         ]);
     }

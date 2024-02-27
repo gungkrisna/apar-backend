@@ -35,8 +35,8 @@ class StoreUserInviteRequest extends FormRequest
     public function messages()
     {
         return [
-            'email.unique_users' => 'The :attribute has already been registered.',
-            'email.unique_invitations' => 'The :attribute has already been invited.'
+            'email.unique_users' => 'Alamat email :attribute sudah terdaftar.',
+            'email.unique_invitations' => 'Alamat email :attribute sudah diundang.'
         ];
     }
 }

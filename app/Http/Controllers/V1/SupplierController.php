@@ -52,7 +52,7 @@ class SupplierController extends Controller
                 'rows' => $data->items()
             ];
 
-            return ResponseFormatter::success(200, 'Success', $responseData);
+            return ResponseFormatter::success(data: $responseData);
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
@@ -84,6 +84,7 @@ class SupplierController extends Controller
         if ($request->user()->cannot('access suppliers')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
+
         try {
             $supplier = Supplier::find($id);
 
@@ -135,8 +136,8 @@ class SupplierController extends Controller
         };
 
         try {
-            Supplier::whereIn('id', $request->id)
-                ->withoutTrashed() 
+            Supplier::withoutTrashed()
+                ->whereIn('id', $request->id)
                 ->delete();
 
             return ResponseFormatter::success();

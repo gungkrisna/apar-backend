@@ -4,22 +4,24 @@ namespace App\Http\Controllers\V1;
 
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
-use App\Models\Supplier;
+use App\Models\Category;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
-class SupplierTrashController extends Controller
+class CategoryTrashController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        if ($request->user()->cannot('access suppliers')) {
+        if ($request->user()->cannot('access categories')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
+
         try {
-            $validColumns = ['id', 'name', 'phone', 'email', 'address'];
+            $validColumns = ['id', 'name', 'description', 'created_at', 'updated_at'];
 
             $pageIndex = $request->query('pageIndex');
             $pageSize = $request->query('pageSize');
@@ -27,28 +29,25 @@ class SupplierTrashController extends Controller
             $columns = $request->query('columns', $validColumns);
 
             $columns = array_intersect($columns, $validColumns);
-            $query = Supplier::onlyTrashed()->orderBy('created_at', 'desc')->select($columns);
-
+            $query = Category::onlyTrashed()->orderBy('created_at', 'desc')->select($columns);
 
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
                     $q->where('name', 'like', '%' . $filter . '%')
-                        ->orWhere('phone', 'like', '%' . $filter . '%')
-                        ->orWhere('email', 'like', '%' . $filter . '%')
-                        ->orWhere('address', 'like', '%' . $filter . '%');
+                        ->orWhere('description', 'like', '%' . $filter . '%');
                 });
             }
 
-            $data = $query->paginate(perPage: $pageSize ?? $query->count(), page: $pageIndex ?? 1);
+            $data = $query->paginate(perPage: $pageSize ?? $query->count(), page: $pageIndex ?? 0);
 
             $responseData = [
-                'totalRowCount' => Supplier::onlyTrashed()->count(),
+                'totalRowCount' => Category::onlyTrashed()->count(),
                 'filteredRowCount' => $query->count(),
                 'pageCount' => $data->lastPage(),
-                'rows' => $data->items(),
+                'rows' => $data->items()
             ];
 
-            return ResponseFormatter::success(200, 'Success', $responseData);
+            return ResponseFormatter::success(data: $responseData);
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
@@ -59,7 +58,7 @@ class SupplierTrashController extends Controller
      */
     public function restore(Request $request)
     {
-        if ($request->user()->cannot('restore suppliers')) {
+        if ($request->user()->cannot('restore categories')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
         try {
@@ -67,15 +66,15 @@ class SupplierTrashController extends Controller
             $failures = [];
 
             foreach ($request->input('id') as $id) {
-                $supplier = Supplier::onlyTrashed()->find($id);
+                $category = Category::onlyTrashed()->find($id);
 
-                if ($supplier) {
-                    $supplier->restore();
-                    $successes[] = $supplier;
+                if ($category) {
+                    $category->restore();
+                    $successes[] = $category;
                 } else {
                     $failures[] = [
                         'id' => $id,
-                        'error' => 'Supplier dengan ID ' . $id . ' tidak ditemukan di folder sampah.',
+                        'error' => 'Kategori dengan ID ' . $id . ' tidak ditemukan di folder sampah.',
                     ];
                 }
             }
@@ -101,14 +100,20 @@ class SupplierTrashController extends Controller
      */
     public function destroy(Request $request)
     {
-        if ($request->user()->cannot('force delete suppliers')) {
+        if ($request->user()->cannot('force delete categories')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
 
         try {
-            Supplier::onlyTrashed()
-                ->whereIn('id', $request->id)
-                ->forceDelete();
+            $category = Category::onlyTrashed()->whereIn('id', $request->id)->first();
+
+            if ($category) {
+                if ($category->headerImage) {
+                    Storage::disk('public')->delete($category->headerImage->path);
+                    $category->headerImage->delete();
+                }
+                $category->forceDelete();
+            }
 
             return ResponseFormatter::success();
         } catch (\Exception $e) {
@@ -121,14 +126,26 @@ class SupplierTrashController extends Controller
      */
     public function empty(Request $request)
     {
-        if ($request->user()->cannot('force delete suppliers')) {
+        if ($request->user()->cannot('force delete categories')) {
             return ResponseFormatter::error('401', 'Unauthorized');
-        };
+        }
 
         try {
-            Supplier::onlyTrashed()->forceDelete();
+            $trashedCategories = Category::onlyTrashed()->with('headerImage')->get();
+
+            foreach ($trashedCategories as $category) {
+                if ($category->headerImage) {
+                    Storage::disk('public')->delete($category->headerImage->path);
+                    $category->headerImage->delete();
+                }
+                $category->forceDelete();
+            }
+
+            DB::commit();
+
             return ResponseFormatter::success();
         } catch (\Exception $e) {
+            DB::rollBack();
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
     }

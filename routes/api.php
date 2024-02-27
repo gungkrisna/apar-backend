@@ -4,6 +4,10 @@ use App\Helpers\V1\ResponseFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\V1\CategoryController;
+use App\Http\Controllers\V1\CategoryImageController;
+use App\Http\Controllers\V1\CategoryTrashController;
+use App\Http\Controllers\V1\FeatureController;
 use App\Http\Controllers\V1\ProfileController;
 use App\Http\Controllers\V1\ProfilePhotoController;
 use App\Http\Controllers\V1\RegistrationController;
@@ -69,6 +73,29 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
     });
 
+    Route::prefix('categories')->as('categories.')->group(function () {
+        Route::controller(CategoryImageController::class)->group(function () {
+            Route::post('/image', 'store')->name('store');
+            Route::delete('/image/{id}', 'destroy')->name('destroy');
+        });    
+        Route::controller(CategoryTrashController::class)->group(function () {
+            Route::get('/trash', 'index')->name('trash.index');
+            Route::put('/trash', 'restore')->name('trash.restore');
+            Route::delete('/trash/empty', 'empty')->name('trash.empty');
+            Route::delete('/trash', 'destroy')->name('trash.destroy');
+        });
+
+        Route::controller(CategoryController::class)->group(function () {
+            Route::post('/', 'store')->name('store');
+            Route::get('/{category}', 'show')->name('show');
+            Route::get('/', 'index')->name('index');
+            Route::put('/{category}', 'update')->name('update');
+            Route::delete('/', 'destroy')->name('destroy');
+        });
+    });
+
+    Route::apiResource('/features', FeatureController::class);
+
     Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
     Route::get('/user-roles', [UserRoleController::class, 'index'])->name('user-role.index');
 });
@@ -78,4 +105,3 @@ Route::middleware(['guest'])->group(function () {
     Route::get('/register', [RegistrationController::class, 'check'])->name('registration.check');
     Route::get('/users/invite/{token}', [UserInviteController::class, 'show'])->name('user.invite.show');
 });
-

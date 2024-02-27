@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Helpers\V1\ResponseFormatter;
 use App\Models\Invitation;
 use App\Models\User;
 use Closure;
@@ -17,29 +18,29 @@ class FirstUserOrInviteOnly
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (User::all()->count() === 0) {
+        if (User::count() === 0) {
             return $next($request);
-        } else if ($request->invite_token) {
-            $inviteData = Invitation::getInviteData($request->invite_token);
+        } else if ($inviteToken = $request->invite_token) {
+            $inviteData = Invitation::getInviteData($inviteToken);
 
             if ($inviteData) {
                 $inviteEmail = $inviteData['email'];
 
                 if ($inviteEmail !== $request->email) {
-                    return response()->json([
-                        'errors' => [
-                            'email' => ['The invite code is not valid for this email address.'],
-                        ],
-                    ], 422);
+                    return ResponseFormatter::error(422, 'Unprocessable Entity', [
+                        'email' => ["Kode undangan tidak valid untuk alamat email {$request->email}."],
+                    ]);
                 }
 
                 $request->merge([
                     'role' => $inviteData['role'],
                 ]);
+
                 return $next($request);
             }
+            return ResponseFormatter::error(403, 'Forbidden');
         } else {
-            return abort(403, 'Forbidden');
+            return ResponseFormatter::error(403, 'Forbidden');
         }
     }
 }
