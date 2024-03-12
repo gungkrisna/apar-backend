@@ -1,0 +1,161 @@
+<?php
+
+namespace App\Http\Controllers\V1;
+
+use App\Helpers\V1\ResponseFormatter;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\V1\StoreCustomerRequest;
+use App\Http\Requests\V1\UpdateCustomerRequest;
+use App\Models\Customer;
+use Illuminate\Http\Request;
+
+class CustomerController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+     public function index(Request $request)
+    {
+        if ($request->user()->cannot('access customers')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        }
+
+        try {
+            $validColumns = ['id', 'company_name', 'pic_name', 'phone', 'email', 'address', 'created_at', 'updated_at'];
+
+            $filter = $request->query('filter');
+            $columns = $request->query('columns', $validColumns);
+
+            $columns = array_intersect($columns, $validColumns);
+            $query = Customer::withoutTrashed()
+                ->orderBy('created_at', 'desc')
+                ->select($columns);
+
+            if ($filter !== null && $filter !== '') {
+                $query->where(function ($q) use ($filter) {
+                    $q->where('company_name', 'like', '%' . $filter . '%')
+                        ->orWhere('pic_name', 'like', '%' . $filter . '%')
+                        ->orWhere('phone', 'like', '%' . $filter . '%')
+                        ->orWhere('phone', 'like', '%' . $filter . '%')
+                        ->orWhere('email', 'like', '%' . $filter . '%')
+                        ->orWhere('address', 'like', '%' . $filter . '%');
+                });
+            }
+
+        if (!$request->has('pageIndex') && !$request->has('pageSize')) {
+            $data = $query->get();
+            $responseData = [
+                'rows' => $data,
+                'totalRowCount' => $query->count(),
+                'filteredRowCount' => $query->count(),
+                'pageCount' => 1,
+            ];
+        } else {
+            $pageIndex = $request->query('pageIndex', 1);
+            $pageSize = $request->query('pageSize', $query->count());
+            $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
+
+            $responseData = [
+                'totalRowCount' => Customer::withoutTrashed()->count(),
+                'filteredRowCount' => $query->count(),
+                'pageCount' => $data->lastPage(),
+                'rows' => $data->items(),
+            ];
+        }
+
+            return ResponseFormatter::success(data: $responseData);
+        } catch (\Exception $e) {
+            return ResponseFormatter::error(400, 'Failed', $e->getMessage());
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(StoreCustomerRequest $request)
+    {
+        $validated = $request->validated();
+
+        $customer = Customer::create([
+            'company_name' => $validated['company_name'],
+            'pic_name' => $validated['pic_name'],
+            'phone' => $validated['phone'],
+            'email' => $validated['email'],
+            'address' => $validated['address'],
+            'created_by' => $request->user()->id
+        ]);
+
+        return ResponseFormatter::success(data: $customer);
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Request $request, string $id)
+    {
+        if ($request->user()->cannot('access customers')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+
+        try {
+            $customer = Customer::find($id);
+
+            if (!$customer) {
+                return ResponseFormatter::error('404', 'Not Found');
+            }
+
+            return ResponseFormatter::success(data: $customer);
+        } catch (\Exception $e) {
+            return ResponseFormatter::error(400, 'Failed', $e->getMessage());
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UpdateCustomerRequest $request, string $id)
+    {
+        try {
+            $validated = $request->validated();
+
+            $customer = Customer::find($id);
+
+            if (!$customer) {
+                return ResponseFormatter::error(404, 'Customer not found');
+            }
+
+            $customer->company_name = $validated['company_name'];
+            $customer->pic_name = $validated['pic_name'];
+            $customer->phone = $validated['phone'];
+            $customer->email = $validated['email'];
+            $customer->address = $validated['address'];
+            $customer->updated_by = $request->user()->id;
+
+            $customer->save();
+
+            return ResponseFormatter::success(data: $customer);
+        } catch (\Exception $e) {
+            return ResponseFormatter::error(400, 'Failed', [$e->getMessage()]);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Request $request)
+    {
+        if ($request->user()->cannot('delete customers')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+
+        try {
+            Customer::withoutTrashed()
+                ->whereIn('id', $request->id)
+                ->delete();
+
+            return ResponseFormatter::success();
+        } catch (\Exception $e) {
+            return ResponseFormatter::error(400, 'Failed', $e->getMessage());
+        }
+    }
+}

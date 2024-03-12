@@ -14,22 +14,21 @@ class CategoryTrashController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+     public function index(Request $request)
     {
-        if ($request->user()->cannot('access categories')) {
+        if ($request->user()->cannot('force delete categories')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
 
         try {
             $validColumns = ['id', 'name', 'description', 'created_at', 'updated_at'];
 
-            $pageIndex = $request->query('pageIndex');
-            $pageSize = $request->query('pageSize');
             $filter = $request->query('filter');
             $columns = $request->query('columns', $validColumns);
 
             $columns = array_intersect($columns, $validColumns);
-            $query = Category::onlyTrashed()->orderBy('created_at', 'desc')->select($columns);
+            $category = $columns ? Category::query() : Category::with('features', 'image');
+            $query = $category->onlyTrashed()->orderBy('created_at', 'desc')->select($columns);
 
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
@@ -38,14 +37,26 @@ class CategoryTrashController extends Controller
                 });
             }
 
-            $data = $query->paginate(perPage: $pageSize ?? $query->count(), page: $pageIndex ?? 0);
+        if (!$request->has('pageIndex') && !$request->has('pageSize')) {
+            $data = $query->get();
+            $responseData = [
+                'rows' => $data,
+                'totalRowCount' => $query->count(),
+                'filteredRowCount' => $query->count(),
+                'pageCount' => 1,
+            ];
+        } else {
+            $pageIndex = $request->query('pageIndex', 1);
+            $pageSize = $request->query('pageSize', $query->count());
+            $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
             $responseData = [
                 'totalRowCount' => Category::onlyTrashed()->count(),
                 'filteredRowCount' => $query->count(),
                 'pageCount' => $data->lastPage(),
-                'rows' => $data->items()
+                'rows' => $data->items(),
             ];
+        }
 
             return ResponseFormatter::success(data: $responseData);
         } catch (\Exception $e) {
@@ -108,9 +119,9 @@ class CategoryTrashController extends Controller
             $category = Category::onlyTrashed()->whereIn('id', $request->id)->first();
 
             if ($category) {
-                if ($category->headerImage) {
-                    Storage::disk('public')->delete($category->headerImage->path);
-                    $category->headerImage->delete();
+                if ($category->image) {
+                    Storage::disk('public')->delete($category->image->path);
+                    $category->image->delete();
                 }
                 $category->forceDelete();
             }
@@ -131,12 +142,12 @@ class CategoryTrashController extends Controller
         }
 
         try {
-            $trashedCategories = Category::onlyTrashed()->with('headerImage')->get();
+            $trashedCategories = Category::onlyTrashed()->with('image')->get();
 
             foreach ($trashedCategories as $category) {
-                if ($category->headerImage) {
-                    Storage::disk('public')->delete($category->headerImage->path);
-                    $category->headerImage->delete();
+                if ($category->image) {
+                    Storage::disk('public')->delete($category->image->path);
+                    $category->image->delete();
                 }
                 $category->forceDelete();
             }

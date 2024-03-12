@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
 class CategoryController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the resource.c
      */
     public function index(Request $request)
     {
@@ -26,13 +26,12 @@ class CategoryController extends Controller
         try {
             $validColumns = ['id', 'name', 'description', 'created_at', 'updated_at'];
 
-            $pageIndex = $request->query('pageIndex');
-            $pageSize = $request->query('pageSize');
             $filter = $request->query('filter');
             $columns = $request->query('columns', $validColumns);
 
             $columns = array_intersect($columns, $validColumns);
-            $query = Category::with('features', 'headerImage')->withoutTrashed()->orderBy('created_at', 'desc')->select($columns);
+            $category = $columns ? Category::query() : Category::with('features', 'image');
+            $query = $category->withoutTrashed()->orderBy('created_at', 'desc')->select($columns);
 
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
@@ -41,14 +40,26 @@ class CategoryController extends Controller
                 });
             }
 
-            $data = $query->paginate(perPage: $pageSize ?? $query->count(), page: $pageIndex ?? 0);
+        if (!$request->has('pageIndex') && !$request->has('pageSize')) {
+            $data = $query->get();
+            $responseData = [
+                'rows' => $data,
+                'totalRowCount' => $query->count(),
+                'filteredRowCount' => $query->count(),
+                'pageCount' => 1,
+            ];
+        } else {
+            $pageIndex = $request->query('pageIndex', 1);
+            $pageSize = $request->query('pageSize', $query->count());
+            $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
             $responseData = [
                 'totalRowCount' => Category::withoutTrashed()->count(),
                 'filteredRowCount' => $query->count(),
                 'pageCount' => $data->lastPage(),
-                'rows' => $data->items()
+                'rows' => $data->items(),
             ];
+        }
 
             return ResponseFormatter::success(data: $responseData);
         } catch (\Exception $e) {
@@ -72,7 +83,7 @@ class CategoryController extends Controller
         if ($request->has('image')) {
             $image = Image::find($request->input('image'));
             $image->collection_name = 'image';
-            $category->headerImage()->save($image);
+            $category->image()->save($image);
         }
 
         if ($request->has('features')) {
@@ -101,7 +112,7 @@ class CategoryController extends Controller
         };
 
         try {
-            $category = Category::with('features', 'headerImage')->find($id);
+            $category = Category::with('features', 'image')->find($id);
 
             if (!$category) {
                 return ResponseFormatter::error(404, 'Not Found');
@@ -131,13 +142,13 @@ class CategoryController extends Controller
         if ($request->has('image')) {
             $image = Image::find($request->input('image'));
 
-            if ($category->headerImage && $category->headerImage != $image) {
-                Storage::disk('public')->delete($category->headerImage->path);
-                $category->headerImage->delete();
+            if ($category->image && $category->image != $image) {
+                Storage::disk('public')->delete($category->image->path);
+                $category->image->delete();
             }
 
             $image->collection_name = 'image';
-            $category->headerImage()->save($image);
+            $category->image()->save($image);
         }
 
         $category->features()->delete();

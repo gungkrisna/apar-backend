@@ -4,33 +4,36 @@ namespace App\Http\Controllers\V1;
 
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
-use App\Models\Supplier;
+use App\Models\Customer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
-class SupplierTrashController extends Controller
+class CustomerTrashController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-public function index(Request $request)
+     public function index(Request $request)
     {
-        if ($request->user()->cannot('force delete suppliers')) {
+        if ($request->user()->cannot('access customers')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         }
 
         try {
-            $validColumns = ['id', 'name', 'phone', 'email', 'address', 'created_at', 'updated_at'];
+            $validColumns = ['id', 'company_name', 'pic_name', 'phone', 'email', 'address', 'created_at', 'updated_at'];
 
             $filter = $request->query('filter');
             $columns = $request->query('columns', $validColumns);
 
             $columns = array_intersect($columns, $validColumns);
-            $query = Supplier::onlyTrashed()->orderBy('created_at', 'desc')->select($columns);
+            $query = Customer::onlyTrashed()
+                ->orderBy('created_at', 'desc')
+                ->select($columns);
 
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%')
+                    $q->where('company_name', 'like', '%' . $filter . '%')
+                        ->orWhere('pic_name', 'like', '%' . $filter . '%')
+                        ->orWhere('phone', 'like', '%' . $filter . '%')
                         ->orWhere('phone', 'like', '%' . $filter . '%')
                         ->orWhere('email', 'like', '%' . $filter . '%')
                         ->orWhere('address', 'like', '%' . $filter . '%');
@@ -51,7 +54,7 @@ public function index(Request $request)
             $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
             $responseData = [
-                'totalRowCount' => Supplier::onlyTrashed()->count(),
+                'totalRowCount' => Customer::onlyTrashed()->count(),
                 'filteredRowCount' => $query->count(),
                 'pageCount' => $data->lastPage(),
                 'rows' => $data->items(),
@@ -69,7 +72,7 @@ public function index(Request $request)
      */
     public function restore(Request $request)
     {
-        if ($request->user()->cannot('restore suppliers')) {
+        if ($request->user()->cannot('restore customers')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
         try {
@@ -77,15 +80,15 @@ public function index(Request $request)
             $failures = [];
 
             foreach ($request->input('id') as $id) {
-                $supplier = Supplier::onlyTrashed()->find($id);
+                $customer = Customer::onlyTrashed()->find($id);
 
-                if ($supplier) {
-                    $supplier->restore();
-                    $successes[] = $supplier;
+                if ($customer) {
+                    $customer->restore();
+                    $successes[] = $customer;
                 } else {
                     $failures[] = [
                         'id' => $id,
-                        'error' => 'Supplier dengan ID ' . $id . ' tidak ditemukan di folder sampah.',
+                        'error' => 'Pelanggan dengan ID ' . $id . ' tidak ditemukan di folder sampah.',
                     ];
                 }
             }
@@ -106,17 +109,17 @@ public function index(Request $request)
         }
     }
 
-    /**
+     /**
      * Remove the specified resource from storage.
      */
     public function destroy(Request $request)
     {
-        if ($request->user()->cannot('force delete suppliers')) {
+        if ($request->user()->cannot('force delete customers')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
 
         try {
-            Supplier::onlyTrashed()
+            Customer::onlyTrashed()
                 ->whereIn('id', $request->id)
                 ->forceDelete();
 
@@ -131,12 +134,12 @@ public function index(Request $request)
      */
     public function empty(Request $request)
     {
-        if ($request->user()->cannot('force delete suppliers')) {
+        if ($request->user()->cannot('force delete customers')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
 
         try {
-            Supplier::onlyTrashed()->forceDelete();
+            Customer::onlyTrashed()->forceDelete();
             return ResponseFormatter::success();
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());

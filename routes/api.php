@@ -7,12 +7,19 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\V1\CategoryController;
 use App\Http\Controllers\V1\CategoryImageController;
 use App\Http\Controllers\V1\CategoryTrashController;
+use App\Http\Controllers\V1\CustomerController;
+use App\Http\Controllers\V1\CustomerTrashController;
 use App\Http\Controllers\V1\FeatureController;
+use App\Http\Controllers\V1\ProductController;
+use App\Http\Controllers\V1\ProductImageController;
+use App\Http\Controllers\V1\ProductTrashController;
 use App\Http\Controllers\V1\ProfileController;
 use App\Http\Controllers\V1\ProfilePhotoController;
 use App\Http\Controllers\V1\RegistrationController;
 use App\Http\Controllers\V1\SupplierController;
 use App\Http\Controllers\V1\SupplierTrashController;
+use App\Http\Controllers\V1\UnitController;
+use App\Http\Controllers\V1\UnitTrashController;
 use App\Http\Controllers\V1\UserController;
 use App\Http\Controllers\V1\UserInviteController;
 use App\Http\Controllers\V1\UserRoleController;
@@ -55,6 +62,24 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/invite', [UserInviteController::class, 'store'])->name('invite.store');
     });
 
+    Route::prefix('customers')->as('customers.')->group(function () {
+        Route::controller(CustomerTrashController::class)->group(function () {
+            Route::get('/trash', 'index')->name('trash.index');
+            Route::put('/trash', 'restore')->name('trash.restore');
+            Route::delete('/trash/empty', 'empty')->name('trash.empty');
+            Route::delete('/trash', 'destroy')->name('trash.destroy');
+        });
+
+        Route::controller(CustomerController::class)->group(function () {
+            Route::post('/', 'store')->name('store');
+            Route::get('/export', 'export')->name('export');
+            Route::get('/{customer}', 'show')->name('show');
+            Route::get('/', 'index')->name('index');
+            Route::put('/{customer}', 'update')->name('update');
+            Route::delete('/', 'destroy')->name('destroy');
+        });
+    });
+
     Route::prefix('suppliers')->as('suppliers.')->group(function () {
         Route::controller(SupplierTrashController::class)->group(function () {
             Route::get('/trash', 'index')->name('trash.index');
@@ -90,6 +115,44 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/{category}', 'show')->name('show');
             Route::get('/', 'index')->name('index');
             Route::put('/{category}', 'update')->name('update');
+            Route::delete('/', 'destroy')->name('destroy');
+        });
+    });
+
+    Route::prefix('units')->as('units.')->group(function () {
+        Route::controller(UnitTrashController::class)->group(function () {
+            Route::get('/trash', 'index')->name('trash.index');
+            Route::put('/trash', 'restore')->name('trash.restore');
+            Route::delete('/trash/empty', 'empty')->name('trash.empty');
+            Route::delete('/trash', 'destroy')->name('trash.destroy');
+        });
+
+        Route::controller(UnitController::class)->group(function () {
+            Route::post('/', 'store')->name('store');
+            Route::get('/{unit}', 'show')->name('show');
+            Route::get('/', 'index')->name('index');
+            Route::put('/{unit}', 'update')->name('update');
+            Route::delete('/', 'destroy')->name('destroy');
+        });
+    });
+
+    Route::prefix('products')->as('products.')->group(function () {
+        Route::controller(ProductImageController::class)->group(function () {
+            Route::post('/image', 'store')->name('store');
+            Route::delete('/image/{id}', 'destroy')->name('destroy');
+        });    
+        Route::controller(ProductTrashController::class)->group(function () {
+            Route::get('/trash', 'index')->name('trash.index');
+            Route::put('/trash', 'restore')->name('trash.restore');
+            Route::delete('/trash/empty', 'empty')->name('trash.empty');
+            Route::delete('/trash', 'destroy')->name('trash.destroy');
+        });
+
+        Route::controller(ProductController::class)->group(function () {
+            Route::post('/', 'store')->name('store');
+            Route::get('/{product}', 'show')->name('show');
+            Route::get('/', 'index')->name('index');
+            Route::put('/{product}', 'update')->name('update');
             Route::delete('/', 'destroy')->name('destroy');
         });
     });

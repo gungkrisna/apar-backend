@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -38,6 +37,13 @@ class PermissionsSeeder extends Seeder
             "update invitations",
             "delete invitations",
 
+            "access customers",
+            "create customers",
+            "update customers",
+            "delete customers",
+            "force delete customers",
+            "restore customers",
+
             "access suppliers",
             "create suppliers",
             "update suppliers",
@@ -45,17 +51,26 @@ class PermissionsSeeder extends Seeder
             "force delete suppliers",
             "restore suppliers",
 
-            "access products",
-            "create products",
-            "update products",
-            "delete products",
-
             "access categories",
             "create categories",
             "update categories",
             "delete categories",
             "force delete categories",
             "restore categories",
+
+            "access units",
+            "create units",
+            "update units",
+            "delete units",
+            "force delete units",
+            "restore units",
+
+            "access products",
+            "create products",
+            "update products",
+            "delete products",
+            "force delete products",
+            "restore products",
         ];
 
         foreach ($permissions as $permission) {
@@ -83,30 +98,34 @@ class PermissionsSeeder extends Seeder
         }
 
         $staffPermissions = [
+            "access customers",
+            "create customers",
+            "update customers",
+            "delete customers",
+
             "access suppliers",
             "create suppliers",
             "update suppliers",
             "delete suppliers",
+
+            "access categories",
+            "create categories",
+            "update categories",
+            "delete categories",
+
+            "access units",
+            "create units",
+            "update units",
+            "delete units",
+
+            "access products",
+            "create products",
+            "update products",
+            "delete products",
         ];
 
         foreach ($staffPermissions as $permission) {
             $staffRole->givePermissionTo($permission);
-        }
-
-        // Customer Permission
-
-        $customerRole = Role::where("name", "Customer")->first();
-
-        if(!$customerRole){
-            $customerRole = Role::create(["name" => "Customer"]);
-        }
-        
-        $customerPermissions = [
-            "access products",
-        ];
-        
-        foreach ($customerPermissions as $permission) {
-            $customerRole->givePermissionTo($permission);
         }
     }
 }

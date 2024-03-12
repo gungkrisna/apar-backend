@@ -8,12 +8,13 @@ use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 
-class Supplier extends Model
+class Customer extends Model
 {
     use SoftDeletes, Prunable, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name',
+        'company_name',
+        'pic_name',
         'phone',
         'email',
         'address',
@@ -21,6 +22,7 @@ class Supplier extends Model
         'updated_by',
     ];
 
+    // make sure it doesnt prune data that has relation
     // public function prunable() {
     //     return static::where('deleted_at', '<=', now()->subDays(90));
     // }
@@ -33,6 +35,5 @@ class Supplier extends Model
     public function updatedBy()
     {
         return $this->belongsTo(User::class, 'updated_by');
-    }
+    } 
 }
-

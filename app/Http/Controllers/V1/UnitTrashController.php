@@ -4,36 +4,34 @@ namespace App\Http\Controllers\V1;
 
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
-use App\Models\Supplier;
+use App\Http\Requests\V1\StoreUnitRequest;
+use App\Http\Requests\V1\UpdateUnitRequest;
+use App\Models\Unit;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
-class SupplierTrashController extends Controller
+class UnitTrashController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-public function index(Request $request)
+    public function index(Request $request)
     {
-        if ($request->user()->cannot('force delete suppliers')) {
+        if ($request->user()->cannot('force delete units')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         }
 
         try {
-            $validColumns = ['id', 'name', 'phone', 'email', 'address', 'created_at', 'updated_at'];
+            $validColumns = ['id', 'name', 'created_at', 'updated_at'];
 
             $filter = $request->query('filter');
             $columns = $request->query('columns', $validColumns);
 
             $columns = array_intersect($columns, $validColumns);
-            $query = Supplier::onlyTrashed()->orderBy('created_at', 'desc')->select($columns);
+            $query = Unit::onlyTrashed()->orderBy('created_at', 'desc')->select($columns);
 
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%')
-                        ->orWhere('phone', 'like', '%' . $filter . '%')
-                        ->orWhere('email', 'like', '%' . $filter . '%')
-                        ->orWhere('address', 'like', '%' . $filter . '%');
+                    $q->where('name', 'like', '%' . $filter . '%');
                 });
             }
 
@@ -51,7 +49,7 @@ public function index(Request $request)
             $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
             $responseData = [
-                'totalRowCount' => Supplier::onlyTrashed()->count(),
+                'totalRowCount' => Unit::onlyTrashed()->count(),
                 'filteredRowCount' => $query->count(),
                 'pageCount' => $data->lastPage(),
                 'rows' => $data->items(),
@@ -69,7 +67,7 @@ public function index(Request $request)
      */
     public function restore(Request $request)
     {
-        if ($request->user()->cannot('restore suppliers')) {
+        if ($request->user()->cannot('restore units')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
         try {
@@ -77,15 +75,15 @@ public function index(Request $request)
             $failures = [];
 
             foreach ($request->input('id') as $id) {
-                $supplier = Supplier::onlyTrashed()->find($id);
+                $unit = Unit::onlyTrashed()->find($id);
 
-                if ($supplier) {
-                    $supplier->restore();
-                    $successes[] = $supplier;
+                if ($unit) {
+                    $unit->restore();
+                    $successes[] = $unit;
                 } else {
                     $failures[] = [
                         'id' => $id,
-                        'error' => 'Supplier dengan ID ' . $id . ' tidak ditemukan di folder sampah.',
+                        'error' => 'Unit dengan ID ' . $id . ' tidak ditemukan di folder sampah.',
                     ];
                 }
             }
@@ -111,12 +109,12 @@ public function index(Request $request)
      */
     public function destroy(Request $request)
     {
-        if ($request->user()->cannot('force delete suppliers')) {
+        if ($request->user()->cannot('force delete units')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
 
         try {
-            Supplier::onlyTrashed()
+            Unit::onlyTrashed()
                 ->whereIn('id', $request->id)
                 ->forceDelete();
 
@@ -131,12 +129,12 @@ public function index(Request $request)
      */
     public function empty(Request $request)
     {
-        if ($request->user()->cannot('force delete suppliers')) {
+        if ($request->user()->cannot('force delete units')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
 
         try {
-            Supplier::onlyTrashed()->forceDelete();
+            Unit::onlyTrashed()->forceDelete();
             return ResponseFormatter::success();
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());

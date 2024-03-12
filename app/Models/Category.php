@@ -26,8 +26,18 @@ class Category extends Model
         return $this->hasMany(Feature::class);
     }
 
-    public function headerImage(): MorphOne
+    public function image(): MorphOne
     {
         return $this->morphOne(Image::class, 'imageable')->where('collection_name', 'image');
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

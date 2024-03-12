@@ -11,23 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('products', function (Blueprint $table) {
+        Schema::create('units', function (Blueprint $table) {
             $table->id();
-            $table->boolean('status')->default(true);
-            $table->string('code');
             $table->string('name');
-            $table->text('description');
-            $table->integer('stock');
-            $table->integer('price');
-            $table->unsignedBigInteger('supplierId')->nullable();
-            $table->unsignedBigInteger('categoryId')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('supplierId')->references('id')->on('suppliers')->onDelete('set null');
-            $table->foreign('categoryId')->references('id')->on('categories')->onDelete('set null');
             $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
             $table->foreign('updated_by')->references('id')->on('users')->onDelete('set null');
         });
@@ -38,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('products');
+        Schema::dropIfExists('units');
     }
 };

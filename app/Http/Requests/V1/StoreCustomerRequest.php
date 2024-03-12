@@ -5,14 +5,14 @@ namespace App\Http\Requests\V1;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreSupplierRequest extends FormRequest
+class StoreCustomerRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
-    {
-        return $this->user()->can('create suppliers');
+    { 
+           return $this->user()->can('create customers');
     }
 
     /**
@@ -22,10 +22,11 @@ class StoreSupplierRequest extends FormRequest
      */
     public function rules(): array
     {
-        $supplier = $this->route('supplier');
+        $customer = $this->route('customer');
 
         return [
-            'name' => ['required', 'string', Rule::unique('suppliers')->ignore($supplier)],
+            'company_name' => ['required', 'string', Rule::unique('customers')->ignore($customer)],
+            'pic_name' => ['required', 'string'],
             'phone' => ['required', 'string', 'regex:/^([0-9\s\-\+\(\)]*)$/', 'min:9'],
             'email' => ['required', 'string', 'email', 'max:255'],
             'address' => ['required', 'string']
@@ -35,9 +36,12 @@ class StoreSupplierRequest extends FormRequest
     public function messages()
     {
         return [
-            'name.required' => 'Nama perusahaan wajib diisi.',
-            'name.string' => 'Nama perusahaan harus berupa string.',
-            'name.unique' => 'Nama perusahaan sudah tersimpan sebagai supplier.',
+            'company_name.required' => 'Nama perusahaan wajib diisi.',
+            'company_name.string' => 'Nama perusahaan harus berupa string.',
+            'company_name.unique' => 'Nama perusahaan sudah tersimpan sebagai supplier.',
+            'pic_name.required' => 'Nama person in contact wajib diisi.',
+            'pic_name.string' => 'Nama  person in contact harus berupa string.',
+            'pic_name.unique' => 'Nama  person in contact sudah tersimpan sebagai supplier.',
             'phone.required' => 'Nomor telepon wajib diisi.',
             'phone.regex' => 'Format nomor telepon tidak valid.',
             'phone.min' => 'Nomor telepon harus memiliki setidaknya 9 karakter.',

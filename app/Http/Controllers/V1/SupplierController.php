@@ -22,17 +22,18 @@ class SupplierController extends Controller
     {
         if ($request->user()->cannot('access suppliers')) {
             return ResponseFormatter::error('401', 'Unauthorized');
-        };
-        try {
-            $validColumns = ['id', 'name', 'phone', 'email', 'address', 'status', 'created_at', 'updated_at'];
+        }
 
-            $pageIndex = $request->query('pageIndex');
-            $pageSize = $request->query('pageSize');
+        try {
+            $validColumns = ['id', 'name', 'phone', 'email', 'address', 'created_at', 'updated_at'];
+
             $filter = $request->query('filter');
             $columns = $request->query('columns', $validColumns);
 
             $columns = array_intersect($columns, $validColumns);
-            $query = Supplier::withoutTrashed()->orderBy('created_at', 'desc')->select($columns);
+            $query = Supplier::withoutTrashed()
+                ->orderBy('created_at', 'desc')
+                ->select($columns);
 
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
@@ -43,14 +44,26 @@ class SupplierController extends Controller
                 });
             }
 
-            $data = $query->paginate(perPage: $pageSize ?? $query->count(), page: $pageIndex ?? 0);
+        if (!$request->has('pageIndex') && !$request->has('pageSize')) {
+            $data = $query->get();
+            $responseData = [
+                'rows' => $data,
+                'totalRowCount' => $query->count(),
+                'filteredRowCount' => $query->count(),
+                'pageCount' => 1,
+            ];
+        } else {
+            $pageIndex = $request->query('pageIndex', 1);
+            $pageSize = $request->query('pageSize', $query->count());
+            $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
             $responseData = [
                 'totalRowCount' => Supplier::withoutTrashed()->count(),
                 'filteredRowCount' => $query->count(),
                 'pageCount' => $data->lastPage(),
-                'rows' => $data->items()
+                'rows' => $data->items(),
             ];
+        }
 
             return ResponseFormatter::success(data: $responseData);
         } catch (\Exception $e) {

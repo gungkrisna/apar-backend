@@ -39,19 +39,18 @@ class UpdateSupplierRequest extends FormRequest
     public function messages()
     {
         return [
-            'name.required' => 'Kolom nama perusahaan wajib diisi.',
-            'name.string' => 'Kolom nama perusahaan harus berupa string.',
+            'name.required' => 'Nama perusahaan wajib diisi.',
+            'name.string' => 'Nama perusahaan harus berupa string.',
             'name.unique' => 'Nama perusahaan sudah tersimpan sebagai supplier.',
-            'phone.required' => 'Kolom telepon wajib diisi.',
-            'phone.string' => 'Kolom telepon harus berupa string.',
-            'phone.regex' => 'Format telepon tidak valid.',
-            'phone.min' => 'Telepon harus memiliki setidaknya 9 karakter.',
-            'email.required' => 'Kolom email wajib diisi.',
-            'email.string' => 'Kolom email harus berupa string.',
-            'email.email' => 'Format email tidak valid.',
-            'email.max' => 'Panjang email tidak boleh lebih dari 255 karakter.',
-            'address.required' => 'Kolom alamat wajib diisi.',
-            'address.string' => 'Kolom alamat harus berupa string.',
+            'phone.required' => 'Nomor telepon wajib diisi.',
+            'phone.string' => 'Nomor telepon harus berupa string.',
+            'phone.regex' => 'Format nomor telepon tidak valid.',
+            'phone.min' => 'Nomor telepon harus memiliki setidaknya 9 karakter.',
+            'email.required' => 'Alamat email wajib diisi.',
+            'email.string' => 'Alamat email harus berupa string.',
+            'email.email' => 'Alamat email tidak valid.',
+            'address.required' => 'Alamat wajib diisi.',
+            'address.string' => 'Alamat harus berupa string.',
         ];
     }
 }

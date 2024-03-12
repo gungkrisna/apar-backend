@@ -8,22 +8,15 @@ use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 
-class Supplier extends Model
+class Unit extends Model
 {
     use SoftDeletes, Prunable, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
-        'phone',
-        'email',
-        'address',
         'created_by',
         'updated_by',
     ];
-
-    // public function prunable() {
-    //     return static::where('deleted_at', '<=', now()->subDays(90));
-    // }
 
     public function createdBy()
     {
@@ -35,4 +28,3 @@ class Supplier extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 }
-

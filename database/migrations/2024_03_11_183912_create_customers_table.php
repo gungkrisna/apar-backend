@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('suppliers', function (Blueprint $table) {
+        Schema::create('customers', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('company_name');
+            $table->string('pic_name');
             $table->string('phone');
             $table->string('email');
             $table->string('address');
@@ -29,7 +30,7 @@ return new class extends Migration
             $table->foreign('updated_by')
                 ->references('id')->on('users')
                 ->onDelete('set null');
-            });
+        });
     }
 
     /**
@@ -37,6 +38,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('suppliers');
+        Schema::dropIfExists('customers');
     }
 };
