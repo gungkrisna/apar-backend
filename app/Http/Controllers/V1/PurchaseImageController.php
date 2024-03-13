@@ -4,18 +4,19 @@ namespace App\Http\Controllers\V1;
 
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\V1\StoreCategoryImageRequest;
+use App\Http\Requests\V1\StorePurchaseImageRequest;
 use App\Models\Image;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-class CategoryImageController extends Controller
+class PurchaseImageController extends Controller
 {
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreCategoryImageRequest $request)
+    public function store(StorePurchaseImageRequest $request)
     {
-        $path = $request->file('image')->store('images/categories', 'public');
+        $path = $request->file('image')->store('images/purchases', 'public');
 
         $image = Image::create(['path' => $path]);
 
@@ -31,11 +32,11 @@ class CategoryImageController extends Controller
     public function destroy($id)
     {
         $image = Image::findOrFail($id);
-        if($image->collection_name === 'category_image'){  
+        if($image->collection_name === 'purchase_images'){
             Storage::disk('public')->delete($image->path);
             $image->delete();
         }
-        
+
         return ResponseFormatter::success();
     }
 }

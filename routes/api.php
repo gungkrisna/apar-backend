@@ -4,6 +4,7 @@ use App\Helpers\V1\ResponseFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\V1\PurchaseImageController;
 use App\Http\Controllers\V1\CategoryController;
 use App\Http\Controllers\V1\CategoryImageController;
 use App\Http\Controllers\V1\CategoryTrashController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\V1\ProductImageController;
 use App\Http\Controllers\V1\ProductTrashController;
 use App\Http\Controllers\V1\ProfileController;
 use App\Http\Controllers\V1\ProfilePhotoController;
+use App\Http\Controllers\V1\PurchaseController;
 use App\Http\Controllers\V1\RegistrationController;
 use App\Http\Controllers\V1\SupplierController;
 use App\Http\Controllers\V1\SupplierTrashController;
@@ -153,6 +155,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/{product}', 'show')->name('show');
             Route::get('/', 'index')->name('index');
             Route::put('/{product}', 'update')->name('update');
+            Route::delete('/', 'destroy')->name('destroy');
+        });
+    });
+
+    Route::prefix('purchases')->as('purchases.')->group(function () {
+        Route::controller(PurchaseImageController::class)->group(function () {
+            Route::post('/image', 'store')->name('store');
+            Route::delete('/image/{id}', 'destroy')->name('destroy');
+        });    
+
+        Route::controller(PurchaseController::class)->group(function () {
+            Route::post('/', 'store')->name('store');
+            Route::get('/{purchase}', 'show')->name('show');
+            Route::get('/', 'index')->name('index');
+            Route::put('/{purchase}', 'update')->name('update');
             Route::delete('/', 'destroy')->name('destroy');
         });
     });

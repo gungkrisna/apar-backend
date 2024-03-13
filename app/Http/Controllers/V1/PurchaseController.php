@@ -4,48 +4,51 @@ namespace App\Http\Controllers\V1;
 
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\V1\StoreProductRequest;
-use App\Http\Requests\V1\UpdateProductRequest;
+use App\Http\Requests\V1\StorePurchaseRequest;
+use App\Http\Requests\V1\UpdatePurchaseRequest;
 use App\Models\Image;
-use App\Models\Product;
+use App\Models\Purchase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-class ProductController extends Controller
+class PurchaseController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        if ($request->user()->cannot('access products')) {
-        return ResponseFormatter::error('401', 'Unauthorized');
-    }
-
-    try {
-        $validColumns = ['id', 'serial_number', 'name', 'description', 'stock', 'price', 'expiry_period', 'created_by', 'updated_by', 'unit_id', 'category_id', 'supplier_id', 'created_at', 'updated_at'];
-
-        $filter = $request->query('filter');
-        $columns = $request->query('columns', $validColumns);
-
-        $columns = array_intersect($columns, $validColumns);
-        $query = Product::with('images', 'unit', 'supplier', 'category', 'createdBy', 'updatedBy')
-            ->select($columns)
-            ->withoutTrashed()
-            ->orderBy('created_at', 'desc');
-
-        if ($filter !== null && $filter !== '') {
-            $query->where(function ($q) use ($filter) {
-                $q->where('name', 'like', '%' . $filter . '%')
-                ->orWhereHas('supplier', function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%');
-                })
-                ->orWhereHas('category', function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%');
-                })
-                ->orWhere('description', 'like', '%' . $filter . '%');
-            });
+        if ($request->user()->cannot('access purchases')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
         }
+
+        try {
+            $validColumns = ['id', 'status', 'purchase_number', 'date', 'supplier_id', 'category_id', 'product_id', 'description', 'unit_price', 'quantity', 'total_price', 'created_by', 'updated_by'];
+
+            $filter = $request->query('filter');
+            $columns = $request->query('columns', $validColumns);
+
+            $columns = array_intersect($columns, $validColumns);
+            $query = Purchase::with('images', 'unit', 'supplier', 'category', 'createdBy', 'updatedBy')
+                ->select($columns)
+                ->orderBy('created_at', 'desc');
+
+            if ($filter !== null && $filter !== '') {
+                $query->where(function ($q) use ($filter) {
+                    $q->where('status', 'like', '%' . $filter . '%')
+                        ->orWhere('purchase_number', 'like', '%' . $filter . '%')
+                        ->orWhereHas('unit', function ($q) use ($filter) {
+                            $q->where('name', 'like', '%' . $filter . '%');
+                        })
+                        ->orWhereHas('supplier', function ($q) use ($filter) {
+                            $q->where('name', 'like', '%' . $filter . '%');
+                        })
+                        ->orWhereHas('category', function ($q) use ($filter) {
+                            $q->where('name', 'like', '%' . $filter . '%');
+                        })
+                        ->orWhere('description', 'like', '%' . $filter . '%');
+                });
+            }
 
         if (!$request->has('pageIndex') && !$request->has('pageSize')) {
             $data = $query->get();
@@ -61,38 +64,37 @@ class ProductController extends Controller
             $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
             $responseData = [
-                'totalRowCount' => Product::withoutTrashed()->count(),
+                'totalRowCount' => Purchase::count(),
                 'filteredRowCount' => $query->count(),
                 'pageCount' => $data->lastPage(),
                 'rows' => $data->items(),
             ];
         }
 
-        return ResponseFormatter::success(data: $responseData);
-    } catch (\Exception $e) {
+            return ResponseFormatter::success(data: $responseData);
+        } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
     }
 
-
-    /**
+     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreProductRequest $request)
+    public function store(StorePurchaseRequest $request)
     {
         $validated = $request->validated();
 
-        $product = Product::create([
+        $purchase = Purchase::create([
             'status' => $validated['status'],
-            'serial_number' => $validated['serial_number'],
-            'name' => $validated['name'],
-            'description' => $validated['description'],
-            'stock' => 0,
-            'price' => $validated['price'],
-            'expiry_period' => $validated['expiry_period'],
-            'unit_id' => $validated['unit_id'],
+            'purchase_number' => $validated['purchase_number'],
+            'date' => $validated['date'],
             'supplier_id' => $validated['supplier_id'],
             'category_id' => $validated['category_id'],
+            'product_id' => $validated['product_id'],
+            'description' => $validated['description'],
+            'unit_price' => $validated['unit_price'],
+            'quantity' => $validated['quantity'],
+            'total_price' => $validated['unit_price'] * $validated['quantity'],
             'created_by' => auth()->id(),
         ]);
 
@@ -101,13 +103,12 @@ class ProductController extends Controller
             foreach ($images as $imageId) {
                 $image = Image::find($imageId);
                 $image->collection_name = 'images';
-                $product->images()->save($image);
+                $purchase->images()->save($image);
             }
         }
 
-        return ResponseFormatter::success(data: $product);
+        return ResponseFormatter::success(data: $purchase);
     }
-
 
     /**
      * Display the specified resource.
@@ -119,7 +120,7 @@ class ProductController extends Controller
         }
 
         try {
-            $product = Product::with('images', 'supplier', 'category', 'createdBy', 'updatedBy')->find($id);
+            $product = Purchase::with('images', 'unit', 'supplier', 'category', 'createdBy', 'updatedBy')->find($id);
 
             if (!$product) {
                 return ResponseFormatter::error(404, 'Not Found');
@@ -134,31 +135,31 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateProductRequest $request, $id)
+    public function update(UpdatePurchaseRequest $request, $id)
     {
         $validated = $request->validated();
 
-        $product = Product::findOrFail($id);
+        $product = Purchase::findOrFail($id);
 
         $product->update([
             'status' => $validated['status'],
-            'serial_number' => $validated['serial_number'],
-            'name' => $validated['name'],
-            'description' => $validated['description'],
-            // 'stock' => $validated['stock'],
-            'price' => $validated['price'],
-            'expiry_period' => $validated['expiry_period'],
-            'unit_id' => $validated['unit_id'],
+            'purchase_number' => $validated['purchase_number'],
+            'date' => $validated['date'],
             'supplier_id' => $validated['supplier_id'],
             'category_id' => $validated['category_id'],
+            'product_id' => $validated['product_id'],
+            'description' => $validated['description'],
+            'unit_price' => $validated['unit_price'],
+            'quantity' => $validated['quantity'],
+            'total_price' => $validated['total_price'],
             'updated_by' => auth()->id(),
         ]);
 
-    if ($request->filled('images')) {
-        $images = $validated['images'];
+    if ($request->has('images')) {
+        $newImages = $validated['images'];
 
         $currImages = $product->images->pluck('id')->toArray();
-        $imagesToDelete = array_diff($currImages, $images);
+        $imagesToDelete = array_diff($currImages, $newImages);
 
         foreach ($imagesToDelete as $imageId) {
             $image = Image::find($imageId);
@@ -166,14 +167,11 @@ class ProductController extends Controller
             $image->delete();
         }
 
-        foreach ($images as $imageId) {
+        foreach ($newImages as $imageId) {
             $image = Image::find($imageId);
-            $image->collection_name = 'product_images';
+            $image->collection_name = 'images';
             $product->images()->save($image);
         }
-    } else {
-        // empty images means delete all images if any
-        $product->images()->delete();
     }
 
         return ResponseFormatter::success(data: $product);
@@ -189,8 +187,7 @@ class ProductController extends Controller
         };
 
         try {
-            Product::withoutTrashed()
-                ->whereIn('id', $request->id)
+            Purchase::whereIn('id', $request->id)
                 ->delete();
 
             return ResponseFormatter::success();

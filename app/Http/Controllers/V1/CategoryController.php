@@ -82,7 +82,7 @@ class CategoryController extends Controller
 
         if ($request->has('image')) {
             $image = Image::find($request->input('image'));
-            $image->collection_name = 'image';
+            $image->collection_name = 'category_image';
             $category->image()->save($image);
         }
 
@@ -147,7 +147,7 @@ class CategoryController extends Controller
                 $category->image->delete();
             }
 
-            $image->collection_name = 'image';
+            $image->collection_name = 'category_image';
             $category->image()->save($image);
         }
 

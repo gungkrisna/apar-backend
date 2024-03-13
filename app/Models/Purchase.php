@@ -3,42 +3,32 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Prunable;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Product extends Model
+class Purchase extends Model
 {
-    use HasFactory, SoftDeletes, Prunable;
+    use HasFactory;
 
     protected $fillable = [
         'status',
-        'serial_number',
-        'name',
-        'description',
-        'stock',
-        'price',
-        'expiry_period',
-        'unit_id',
+        'purchase_number',
+        'date',
         'supplier_id',
         'category_id',
+        'product_id',
+        'description',
+        'unit_price',
+        'quantity',
+        'total_price',
         'created_by',
         'updated_by',
     ];
 
-    // public function prunable() {
-    //     return static::where('deleted_at', '<=', now()->subDays(90));
-    // }
-
     public function images(): MorphMany
     {
-        return $this->morphMany(Image::class, 'imageable')->where('collection_name', 'product_images');
-    }
-
-    public function unit()
-    {
-        return $this->belongsTo(Unit::class, 'unit_id');
+        return $this->morphMany(Image::class, 'imageable')->where('collection_name', 'images');
     }
 
     public function supplier()
@@ -49,6 +39,11 @@ class Product extends Model
     public function category()
     {
         return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id');
     }
 
     public function createdBy()

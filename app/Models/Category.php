@@ -28,7 +28,7 @@ class Category extends Model
 
     public function image(): MorphOne
     {
-        return $this->morphOne(Image::class, 'imageable')->where('collection_name', 'image');
+        return $this->morphOne(Image::class, 'imageable')->where('collection_name', 'category_image');
     }
 
     public function createdBy()

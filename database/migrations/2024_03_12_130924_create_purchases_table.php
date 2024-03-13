@@ -11,26 +11,26 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('products', function (Blueprint $table) {
+        Schema::create('purchases', function (Blueprint $table) {
             $table->id();
-            $table->boolean('status')->default(true);
-            $table->string('serial_number');
-            $table->string('name');
-            $table->text('description');
-            $table->decimal('stock');
-            $table->decimal('price');
-            $table->integer('expiry_period')->nullable(); 
-            $table->unsignedBigInteger('unit_id');
+            $table->tinyInteger('status')->default('0')->comment('0: Pending, 1: Disetujui');
+            $table->string('purchase_number');
+            $table->date('date');
             $table->unsignedBigInteger('supplier_id');
             $table->unsignedBigInteger('category_id');
+            $table->unsignedBigInteger('product_id');
+            $table->string('description')->nullable();
+            $table->decimal('unit_price');
+            $table->decimal('quantity');
+            $table->decimal('total_price');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();
-            $table->softDeletes();
 
-            $table->foreign('unit_id')->references('id')->on('units')->onDelete('restrict');
+
             $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('restrict');
             $table->foreign('category_id')->references('id')->on('categories')->onDelete('restrict');
+            $table->foreign('product_id')->references('id')->on('products')->onDelete('restrict');
             $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
             $table->foreign('updated_by')->references('id')->on('users')->onDelete('set null');
         });
@@ -41,6 +41,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('products');
+        Schema::dropIfExists('purchases');
     }
 };
