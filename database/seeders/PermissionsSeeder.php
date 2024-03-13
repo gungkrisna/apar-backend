@@ -71,6 +71,12 @@ class PermissionsSeeder extends Seeder
             "delete products",
             "force delete products",
             "restore products",
+
+            "access purchases",
+            "create purchases",
+            "update purchases",
+            "approve purchases",
+            "delete purchases",
         ];
 
         foreach ($permissions as $permission) {

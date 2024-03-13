@@ -23,7 +23,6 @@ class StorePurchaseRequest extends FormRequest
     public function rules(): array
     {
         return [
-        'status' => 'required',
         'purchase_number' => 'required',
         'date' => 'required',
         'supplier_id' => 'required|exists:suppliers,id',
@@ -45,7 +44,6 @@ class StorePurchaseRequest extends FormRequest
     public function messages()
     {
         return [
-            'status.required' => 'Status produk harus diisi.',
             'purchase_number.required' => 'Nomor pembelian harus diisi.',
             'date.required' => 'Tanggal pembelian harus diisi.',
             'supplier_id.required' => 'Supplier tidak valid.',

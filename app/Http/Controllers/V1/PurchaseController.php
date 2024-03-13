@@ -85,7 +85,7 @@ class PurchaseController extends Controller
         $validated = $request->validated();
 
         $purchase = Purchase::create([
-            'status' => $validated['status'],
+            'status' => 0,
             'purchase_number' => $validated['purchase_number'],
             'date' => $validated['date'],
             'supplier_id' => $validated['supplier_id'],
@@ -115,7 +115,7 @@ class PurchaseController extends Controller
      */
     public function show(Request $request, string $id)
     {
-        if ($request->user()->cannot('access products')) {
+        if ($request->user()->cannot('access purchases')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         }
 
@@ -142,7 +142,6 @@ class PurchaseController extends Controller
         $product = Purchase::findOrFail($id);
 
         $product->update([
-            'status' => $validated['status'],
             'purchase_number' => $validated['purchase_number'],
             'date' => $validated['date'],
             'supplier_id' => $validated['supplier_id'],
@@ -178,17 +177,38 @@ class PurchaseController extends Controller
     }
 
     /**
+     * Approve the specified resource.
+     */
+    public function approve(Request $request)
+    {
+        if ($request->user()->cannot('approve purchases')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+
+        $product = Purchase::findOrFail($request->id);
+        $product->status = 1;
+        $product->save();
+
+        return ResponseFormatter::success();
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(Request $request)
     {
-        if ($request->user()->cannot('delete products')) {
+        if ($request->user()->cannot('delete purchases')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
 
         try {
-            Purchase::whereIn('id', $request->id)
-                ->delete();
+            $purchase = Purchase::findOrFail($request->id);
+            
+            if ($purchase->status !== 1) {
+                $purchase->delete();
+            } else {
+                return ResponseFormatter::error(400, 'Purchase is already approved.');
+            }
 
             return ResponseFormatter::success();
         } catch (\Exception $e) {

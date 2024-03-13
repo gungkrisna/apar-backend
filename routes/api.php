@@ -167,6 +167,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::controller(PurchaseController::class)->group(function () {
             Route::post('/', 'store')->name('store');
+            Route::post('/{purchase}/approve', 'approve')->name('approve');
             Route::get('/{purchase}', 'show')->name('show');
             Route::get('/', 'index')->name('index');
             Route::put('/{purchase}', 'update')->name('update');
