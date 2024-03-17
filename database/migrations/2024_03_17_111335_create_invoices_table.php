@@ -11,25 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('purchases', function (Blueprint $table) {
+        Schema::create('invoices', function (Blueprint $table) {
             $table->id();
             $table->tinyInteger('status')->default('0')->comment('0: Pending, 1: Disetujui');
-            $table->string('purchase_number')->unique();
+            $table->string('invoice_number')->unique();
             $table->date('date');
-            $table->unsignedBigInteger('supplier_id');
+            $table->unsignedBigInteger('customer_id');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();
 
 
-            $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('restrict');
+            $table->foreign('customer_id')->references('id')->on('customers')->onDelete('restrict');
             $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
             $table->foreign('updated_by')->references('id')->on('users')->onDelete('set null');
         });
 
-        Schema::create('purchase_items', function (Blueprint $table) {
+        Schema::create('invoice_items', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('purchase_id');
+            $table->unsignedBigInteger('invoice_id');
             $table->unsignedBigInteger('category_id');
             $table->unsignedBigInteger('product_id');
             $table->string('description')->nullable();
@@ -40,7 +40,7 @@ return new class extends Migration
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();
 
-            $table->foreign('purchase_id')->references('id')->on('purchases')->onDelete('cascade');
+            $table->foreign('invoice_id')->references('id')->on('invoices')->onDelete('cascade');
             $table->foreign('category_id')->references('id')->on('categories')->onDelete('restrict');
             $table->foreign('product_id')->references('id')->on('products')->onDelete('restrict');
             $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
@@ -53,7 +53,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('purchase_items');
-        Schema::dropIfExists('purchases');
+        Schema::dropIfExists('invoice_items');
+        Schema::dropIfExists('invoices');
     }
 };

@@ -35,7 +35,7 @@ class StoreProductImageRequest extends FormRequest
     public function messages()
     {
         return [
-            'images.*.required' => 'Pilih file gambar yang akan diunggah.',
+            'images.*.required' => 'Produk wajib memiliki gambar.',
             'images.*.image' => 'File yang diunggah harus berupa gambar.',
             'images.*.mimes' => 'Ekstensi file yang diperbolehkan: .JPG, .JPEG, .PNG.',
             'images.*.max' => 'Besar file: maksimum 10.000.000 bytes (10 Megabytes).',

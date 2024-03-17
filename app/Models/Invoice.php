@@ -6,15 +6,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-class Purchase extends Model
+class Invoice extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'status',
-        'purchase_number',
+        'invoice_number',
         'date',
-        'supplier_id',
+        'customer_id',
     ];
 
     public function images(): MorphMany
@@ -22,14 +22,14 @@ class Purchase extends Model
         return $this->morphMany(Image::class, 'imageable')->where('collection_name', 'purchase_images');
     }
 
-    public function supplier()
+    public function customer()
     {
-        return $this->belongsTo(Supplier::class, 'supplier_id');
+        return $this->belongsTo(Customer::class, 'customer_id');
     }
 
-    public function purchaseItems()
+    public function invoiceItems()
     {
-        return $this->hasMany(PurchaseItem::class);
+        return $this->hasMany(InvoiceItem::class);
     }
 
     public function createdBy()

@@ -8,6 +8,7 @@ use App\Http\Requests\V1\StorePurchaseRequest;
 use App\Http\Requests\V1\UpdatePurchaseRequest;
 use App\Models\Image;
 use App\Models\Purchase;
+use App\Models\PurchaseItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -23,32 +24,36 @@ class PurchaseController extends Controller
         }
 
         try {
-            $validColumns = ['id', 'status', 'purchase_number', 'date', 'supplier_id', 'category_id', 'product_id', 'description', 'unit_price', 'quantity', 'total_price', 'created_by', 'updated_by'];
+            $validColumns = ['id', 'status', 'purchase_number', 'date', 'supplier_id', 'created_by', 'updated_by'];
 
             $filter = $request->query('filter');
             $columns = $request->query('columns', $validColumns);
 
             $columns = array_intersect($columns, $validColumns);
-            $query = Purchase::with('images', 'unit', 'supplier', 'category', 'createdBy', 'updatedBy')
+            $query = Purchase::with('images', 'supplier', 'purchaseItems', 'createdBy', 'updatedBy')
                 ->select($columns)
                 ->orderBy('created_at', 'desc');
 
-            if ($filter !== null && $filter !== '') {
+           if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
                     $q->where('status', 'like', '%' . $filter . '%')
                         ->orWhere('purchase_number', 'like', '%' . $filter . '%')
-                        ->orWhereHas('unit', function ($q) use ($filter) {
-                            $q->where('name', 'like', '%' . $filter . '%');
+                        ->orWhereHas('purchaseItems', function ($q) use ($filter) {
+                            $q->where('description', 'like', '%' . $filter . '%')
+                                ->orWhereHas('product', function ($q) use ($filter) {
+                                    $q->where('name', 'like', '%' . $filter . '%');
+                                })
+                                ->orWhereHas('category', function ($q) use ($filter) {
+                                    $q->where('name', 'like', '%' . $filter . '%');
+                                });
                         })
                         ->orWhereHas('supplier', function ($q) use ($filter) {
                             $q->where('name', 'like', '%' . $filter . '%');
                         })
-                        ->orWhereHas('category', function ($q) use ($filter) {
-                            $q->where('name', 'like', '%' . $filter . '%');
-                        })
                         ->orWhere('description', 'like', '%' . $filter . '%');
                 });
-            }
+         }
+
 
         if (!$request->has('pageIndex') && !$request->has('pageSize')) {
             $data = $query->get();
@@ -89,20 +94,30 @@ class PurchaseController extends Controller
             'purchase_number' => $validated['purchase_number'],
             'date' => $validated['date'],
             'supplier_id' => $validated['supplier_id'],
-            'category_id' => $validated['category_id'],
-            'product_id' => $validated['product_id'],
-            'description' => $validated['description'],
-            'unit_price' => $validated['unit_price'],
-            'quantity' => $validated['quantity'],
-            'total_price' => $validated['unit_price'] * $validated['quantity'],
             'created_by' => auth()->id(),
         ]);
 
-        if ($request->has('images')) {
+        foreach ($validated['purchase_items'] as $purchaseItemData) {
+            $purchaseItem = new PurchaseItem();
+
+            $purchaseItem->purchase_id = $purchase->id;
+            $purchaseItem->category_id = $purchaseItemData['category_id'];
+            $purchaseItem->product_id = $purchaseItemData['product_id'];
+            $purchaseItem->description = $purchaseItemData['description'] ?? null;
+            $purchaseItem->unit_price = $purchaseItemData['unit_price'];
+            $purchaseItem->quantity = $purchaseItemData['quantity'];
+            $purchaseItem->total_price = $purchaseItemData['unit_price'] * $purchaseItemData['quantity'];
+            $purchaseItem->created_by = auth()->id();
+
+            $purchaseItem->save();
+        }
+
+        if ($request->filled('images')) {
             $images = $validated['images'];
+
             foreach ($images as $imageId) {
                 $image = Image::find($imageId);
-                $image->collection_name = 'images';
+                $image->collection_name = 'purchase_images';
                 $purchase->images()->save($image);
             }
         }
@@ -120,13 +135,13 @@ class PurchaseController extends Controller
         }
 
         try {
-            $product = Purchase::with('images', 'unit', 'supplier', 'category', 'createdBy', 'updatedBy')->find($id);
+            $purchase = Purchase::with('images', 'supplier', 'purchaseItems', 'purchaseItems.product', 'purchaseItems.category', 'createdBy', 'updatedBy')->find($id);
 
-            if (!$product) {
+            if (!$purchase) {
                 return ResponseFormatter::error(404, 'Not Found');
             }
 
-            return ResponseFormatter::success(data: $product);
+            return ResponseFormatter::success(data: $purchase);
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
@@ -139,26 +154,45 @@ class PurchaseController extends Controller
     {
         $validated = $request->validated();
 
-        $product = Purchase::findOrFail($id);
+        $purchase = Purchase::findOrFail($id);
 
-        $product->update([
+        $purchase->update([
+            'status' => 0,
             'purchase_number' => $validated['purchase_number'],
             'date' => $validated['date'],
             'supplier_id' => $validated['supplier_id'],
-            'category_id' => $validated['category_id'],
-            'product_id' => $validated['product_id'],
-            'description' => $validated['description'],
-            'unit_price' => $validated['unit_price'],
-            'quantity' => $validated['quantity'],
-            'total_price' => $validated['total_price'],
             'updated_by' => auth()->id(),
         ]);
+        
+        $currentItemIds = $purchase->purchaseItems()->pluck('id')->toArray();
 
-    if ($request->has('images')) {
-        $newImages = $validated['images'];
+        foreach ($validated['purchase_items'] as $purchaseItemData) {
+            PurchaseItem::updateOrCreate(
+                ['id' => $purchaseItemData['id'] ?? null],
+                [
+                    'purchase_id' => $purchase->id,
+                    'category_id' => $purchaseItemData['category_id'],
+                    'product_id' => $purchaseItemData['product_id'],
+                    'description' => $purchaseItemData['description'] ?? null,
+                    'unit_price' => $purchaseItemData['unit_price'],
+                    'quantity' => $purchaseItemData['quantity'],
+                    'total_price' => $purchaseItemData['unit_price'] * $purchaseItemData['quantity'],
+                    'updated_by' => auth()->id(),
+                ]
+            );
+        }
 
-        $currImages = $product->images->pluck('id')->toArray();
-        $imagesToDelete = array_diff($currImages, $newImages);
+        $itemsToDelete = array_diff($currentItemIds, array_column($validated['purchase_items'], 'id'));
+
+        if (!empty($itemsToDelete)) {
+            PurchaseItem::whereIn('id', $itemsToDelete)->delete();
+        }
+
+    if ($request->filled('images')) {
+        $images = $validated['images'];
+
+        $currImages = $purchase->images->pluck('id')->toArray();
+        $imagesToDelete = array_diff($currImages, $images);
 
         foreach ($imagesToDelete as $imageId) {
             $image = Image::find($imageId);
@@ -166,30 +200,61 @@ class PurchaseController extends Controller
             $image->delete();
         }
 
-        foreach ($newImages as $imageId) {
+        foreach ($images as $imageId) {
             $image = Image::find($imageId);
-            $image->collection_name = 'images';
-            $product->images()->save($image);
+            $image->collection_name = 'purchase_images';
+            $purchase->images()->save($image);
         }
+    } else {
+        // empty images means delete all images if any
+        $purchase->images()->delete();
     }
 
-        return ResponseFormatter::success(data: $product);
+        return ResponseFormatter::success();
     }
 
     /**
      * Approve the specified resource.
      */
-    public function approve(Request $request)
+    public function approve(Request $request, $purchase)
     {
         if ($request->user()->cannot('approve purchases')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
 
-        $product = Purchase::findOrFail($request->id);
-        $product->status = 1;
-        $product->save();
+        Purchase::findOrFail($purchase)->update(['status' => 1]);
 
         return ResponseFormatter::success();
+    }
+    /**
+     * Generate purchase number.
+     */
+    public function generatePurchaseNumber(Request $request)
+    {
+        if ($request->user()->cannot('create purchases')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+
+        $prefix = 'PO/INDOKA/';
+        $month = now()->format('m');
+        $year = now()->year;
+        $lastOrder = Purchase::latest()->first();
+
+        if ($lastOrder) {
+            $lastOrderNumber = $lastOrder->purchase_number;
+            $lastOrderNumberArray = explode('/', $lastOrderNumber);
+            $lastOrderMonth = $lastOrderNumberArray[2];
+            $lastOrderYear = $lastOrderNumberArray[3];
+
+            if ($lastOrderMonth == $month && $lastOrderYear == $year) {
+                $newOrderNumber = $prefix . $month . '/' . $year . '/' . (sprintf('%04d', $lastOrderNumberArray[4] + 1));
+
+            }
+        } else {
+            $newOrderNumber = $prefix . $month . '/' . $year . '/0001';
+        }
+
+        return ResponseFormatter::success(data: $newOrderNumber);
     }
 
     /**
@@ -198,16 +263,18 @@ class PurchaseController extends Controller
     public function destroy(Request $request)
     {
         if ($request->user()->cannot('delete purchases')) {
-            return ResponseFormatter::error('401', 'Unauthorized');
-        };
+            return ResponseFormatter::error(401, 'Unauthorized');
+        }
 
         try {
-            $purchase = Purchase::findOrFail($request->id);
+            $purchases = Purchase::whereIn('id', $request->id)->where('status', '!=', 1)->get();
             
-            if ($purchase->status !== 1) {
-                $purchase->delete();
+            if ($purchases->isEmpty()) {
+                return ResponseFormatter::error(400, 'Semua pembelian sudah disetujui.');
             } else {
-                return ResponseFormatter::error(400, 'Purchase is already approved.');
+                $purchases->each(function ($purchase) {
+                    $purchase->delete();
+                });
             }
 
             return ResponseFormatter::success();

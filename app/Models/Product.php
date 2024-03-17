@@ -31,6 +31,22 @@ class Product extends Model
     //     return static::where('deleted_at', '<=', now()->subDays(90));
     // }
 
+
+    public function getStockAttribute($value)
+    {
+        return $this->num($value);
+    }
+
+    public function getPriceAttribute($value)
+    {
+        return $this->num($value);
+    }
+
+    public function num($num)
+    {
+        return intval($num) == $num ? intval($num) : $num;
+    }
+
     public function images(): MorphMany
     {
         return $this->morphMany(Image::class, 'imageable')->where('collection_name', 'product_images');

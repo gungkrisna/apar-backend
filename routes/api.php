@@ -151,6 +151,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
 
         Route::controller(ProductController::class)->group(function () {
+            Route::post('/serial-number/generate', 'generateSerialNumber')->name('generateSerialNumber');
+            Route::get('/serial-number/{serialNumber}', 'getBySerialNumber')->name('getBySerialNumber');
             Route::post('/', 'store')->name('store');
             Route::get('/{product}', 'show')->name('show');
             Route::get('/', 'index')->name('index');
@@ -166,8 +168,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });    
 
         Route::controller(PurchaseController::class)->group(function () {
-            Route::post('/', 'store')->name('store');
+            Route::post('/po-number/generate', 'generatePurchaseNumber')->name('generatePurchaseNumber');
             Route::post('/{purchase}/approve', 'approve')->name('approve');
+            Route::post('/', 'store')->name('store');
             Route::get('/{purchase}', 'show')->name('show');
             Route::get('/', 'index')->name('index');
             Route::put('/{purchase}', 'update')->name('update');

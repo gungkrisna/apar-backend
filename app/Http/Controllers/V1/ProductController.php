@@ -9,7 +9,11 @@ use App\Http\Requests\V1\UpdateProductRequest;
 use App\Models\Image;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
+use Picqer\Barcode\BarcodeGeneratorJPG;
+use Picqer\Barcode\BarcodeGeneratorPNG;
+use Picqer\Barcode\BarcodeGeneratorSVG;
 
 class ProductController extends Controller
 {
@@ -23,27 +27,40 @@ class ProductController extends Controller
     }
 
     try {
-        $validColumns = ['id', 'serial_number', 'name', 'description', 'stock', 'price', 'expiry_period', 'created_by', 'updated_by', 'unit_id', 'category_id', 'supplier_id', 'created_at', 'updated_at'];
+        $validColumns = ['id', 'serial_number', 'name', 'description', 'stock', 'price', 'expiry_period', 'unit_id', 'category_id', 'supplier_id', 'created_by', 'updated_by', 'created_at', 'updated_at'];
 
         $filter = $request->query('filter');
         $columns = $request->query('columns', $validColumns);
 
         $columns = array_intersect($columns, $validColumns);
-        $query = Product::with('images', 'unit', 'supplier', 'category', 'createdBy', 'updatedBy')
-            ->select($columns)
+        $query = Product::with(['images', 'unit', 'supplier', 'category', 'createdBy', 'updatedBy'])
             ->withoutTrashed()
             ->orderBy('created_at', 'desc');
+
+        if ($request->has('supplier_id')) {
+            $query->where('supplier_id', $request->supplier_id);
+        }
 
         if ($filter !== null && $filter !== '') {
             $query->where(function ($q) use ($filter) {
                 $q->where('name', 'like', '%' . $filter . '%')
+                ->orWhere('serial_number', 'like', '%' . $filter . '%')
+                ->orWhere('description', 'like', '%' . $filter . '%')
                 ->orWhereHas('supplier', function ($q) use ($filter) {
                     $q->where('name', 'like', '%' . $filter . '%');
                 })
                 ->orWhereHas('category', function ($q) use ($filter) {
                     $q->where('name', 'like', '%' . $filter . '%');
                 })
-                ->orWhere('description', 'like', '%' . $filter . '%');
+                ->orWhereHas('unit', function ($q) use ($filter) {
+                    $q->where('name', 'like', '%' . $filter . '%');
+                })
+                ->orWhereHas('createdBy', function ($q) use ($filter) {
+                    $q->where('name', 'like', '%' . $filter . '%');
+                })
+                ->orWhereHas('updatedBy', function ($q) use ($filter) {
+                    $q->where('name', 'like', '%' . $filter . '%');
+                });
             });
         }
 
@@ -96,11 +113,12 @@ class ProductController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        if ($request->has('images')) {
+        if ($request->filled('images')) {
             $images = $validated['images'];
+
             foreach ($images as $imageId) {
                 $image = Image::find($imageId);
-                $image->collection_name = 'images';
+                $image->collection_name = 'product_images';
                 $product->images()->save($image);
             }
         }
@@ -132,6 +150,30 @@ class ProductController extends Controller
     }
 
     /**
+     * Get the product by its serial number.
+     */
+    public function getBySerialNumber(Request $request, string $serialNumber)
+    {
+        if ($request->user()->cannot('access products')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        }
+
+        try {
+            $product = Product::with('images', 'supplier', 'category', 'createdBy', 'updatedBy')
+                ->where('serial_number', $serialNumber)
+                ->first();
+
+            if (!$product) {
+                return ResponseFormatter::error(404, 'Product not found');
+            }
+
+            return ResponseFormatter::success(data: $product);
+        } catch (\Exception $e) {
+            return ResponseFormatter::error(400, 'Failed', $e->getMessage());
+        }
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(UpdateProductRequest $request, $id)
@@ -145,7 +187,6 @@ class ProductController extends Controller
             'serial_number' => $validated['serial_number'],
             'name' => $validated['name'],
             'description' => $validated['description'],
-            // 'stock' => $validated['stock'],
             'price' => $validated['price'],
             'expiry_period' => $validated['expiry_period'],
             'unit_id' => $validated['unit_id'],
@@ -177,6 +218,46 @@ class ProductController extends Controller
     }
 
         return ResponseFormatter::success(data: $product);
+    }
+
+    /**
+     * Generate unique EAN code for serial number.
+     */
+    public function generateSerialNumber(Request $request)
+    {
+    if ($request->user()->cannot('create products')) {
+        return ResponseFormatter::error('401', 'Unauthorized');
+    }
+
+    $prefix = '200';
+    $randomNumber = mt_rand(100000000, 999999999); // 9-digit random number
+
+    // Calculate the check digit
+    $checkDigit = $this->calculateEanCheckDigit($prefix . $randomNumber);
+
+    $eanCode = $prefix . $randomNumber . $checkDigit;
+
+    while (Product::where('serial_number', $eanCode)->exists()) {
+        $randomNumber = mt_rand(100000000, 999999999);
+        $eanCode = $prefix . $randomNumber . $checkDigit;
+    }
+
+    return ResponseFormatter::success(data: $eanCode);
+}
+
+    private function calculateEanCheckDigit($eanWithoutCheckDigit)
+    {
+        $sum = 0;
+        $weight = 3;
+
+        for ($i = strlen($eanWithoutCheckDigit) - 1; $i >= 0; $i--) {
+            $sum += $weight * intval($eanWithoutCheckDigit[$i]);
+            $weight = 4 - $weight; 
+        }
+
+        $checkDigit = (10 - ($sum % 10)) % 10; 
+
+        return $checkDigit;
     }
 
     /**

@@ -14,11 +14,11 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->boolean('status')->default(true);
-            $table->string('serial_number');
+            $table->string('serial_number')->unique();
             $table->string('name');
             $table->text('description');
-            $table->decimal('stock');
-            $table->decimal('price');
+            $table->decimal('stock', 12, 2);
+            $table->decimal('price', 18, 2);
             $table->integer('expiry_period')->nullable(); 
             $table->unsignedBigInteger('unit_id');
             $table->unsignedBigInteger('supplier_id');
