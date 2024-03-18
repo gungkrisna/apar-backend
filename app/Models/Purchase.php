@@ -15,6 +15,8 @@ class Purchase extends Model
         'purchase_number',
         'date',
         'supplier_id',
+        'created_by',
+        'updated_by',
     ];
 
     public function images(): MorphMany

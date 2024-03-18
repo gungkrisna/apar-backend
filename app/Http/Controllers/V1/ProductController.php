@@ -41,6 +41,10 @@ class ProductController extends Controller
             $query->where('supplier_id', $request->supplier_id);
         }
 
+        if ($request->has('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
         if ($filter !== null && $filter !== '') {
             $query->where(function ($q) use ($filter) {
                 $q->where('name', 'like', '%' . $filter . '%')

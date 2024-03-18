@@ -15,11 +15,13 @@ class Invoice extends Model
         'invoice_number',
         'date',
         'customer_id',
+        'created_by',
+        'updated_by',
     ];
 
     public function images(): MorphMany
     {
-        return $this->morphMany(Image::class, 'imageable')->where('collection_name', 'purchase_images');
+        return $this->morphMany(Image::class, 'imageable')->where('collection_name', 'invoice_images');
     }
 
     public function customer()

@@ -11,6 +11,8 @@ use App\Http\Controllers\V1\CategoryTrashController;
 use App\Http\Controllers\V1\CustomerController;
 use App\Http\Controllers\V1\CustomerTrashController;
 use App\Http\Controllers\V1\FeatureController;
+use App\Http\Controllers\V1\InvoiceController;
+use App\Http\Controllers\V1\InvoiceImageController;
 use App\Http\Controllers\V1\ProductController;
 use App\Http\Controllers\V1\ProductImageController;
 use App\Http\Controllers\V1\ProductTrashController;
@@ -174,6 +176,23 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/{purchase}', 'show')->name('show');
             Route::get('/', 'index')->name('index');
             Route::put('/{purchase}', 'update')->name('update');
+            Route::delete('/', 'destroy')->name('destroy');
+        });
+    });
+
+    Route::prefix('invoices')->as('invoices.')->group(function () {
+        Route::controller(InvoiceImageController::class)->group(function () {
+            Route::post('/image', 'store')->name('store');
+            Route::delete('/image/{id}', 'destroy')->name('destroy');
+        });    
+
+        Route::controller(InvoiceController::class)->group(function () {
+            Route::post('/invoice-number/generate', 'generateInvoiceNumber')->name('generateInvoiceNumber');
+            Route::post('/{invoice}/approve', 'approve')->name('approve');
+            Route::post('/', 'store')->name('store');
+            Route::get('/{invoice}', 'show')->name('show');
+            Route::get('/', 'index')->name('index');
+            Route::put('/{invoice}', 'update')->name('update');
             Route::delete('/', 'destroy')->name('destroy');
         });
     });

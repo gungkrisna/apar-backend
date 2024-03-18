@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers\V1;
 
+
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\V1\StorePurchaseImageRequest;
+use App\Http\Requests\V1\StoreInvoiceImageRequest;
 use App\Models\Image;
 use Illuminate\Support\Facades\Storage;
 
-class PurchaseImageController extends Controller
+class InvoiceImageController extends Controller
 {
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StorePurchaseImageRequest $request)
+    public function store(StoreInvoiceImageRequest $request)
     {
-        $path = $request->file('image')->store('images/purchases', 'public');
+        $path = $request->file('image')->store('images/invoices', 'public');
 
         $image = Image::create(['path' => $path]);
 
@@ -31,7 +32,7 @@ class PurchaseImageController extends Controller
     public function destroy($id)
     {
         $image = Image::findOrFail($id);
-        if($image->collection_name === 'purchase_images'){
+        if($image->collection_name === 'invoice_images'){
             Storage::disk('public')->delete($image->path);
             $image->delete();
         }

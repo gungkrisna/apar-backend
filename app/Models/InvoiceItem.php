@@ -17,6 +17,7 @@ class InvoiceItem extends Model
         'quantity',
         'unit_price',
         'total_price',
+        'expiry_date',
         'created_by',
         'updated_by',
     ];

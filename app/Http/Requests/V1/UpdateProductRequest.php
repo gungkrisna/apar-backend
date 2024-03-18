@@ -34,7 +34,7 @@ class UpdateProductRequest extends FormRequest
         'unit_id' => 'required|exists:units,id',
         'supplier_id' => 'required|exists:suppliers,id',
         'category_id' => 'required|exists:categories,id',
-        'images' => 'required|array|min:1',
+        'images' => 'required|array|min:1|max:12',
         'images.*' => 'required|integer|exists:images,id',
         ];
     }
@@ -63,6 +63,7 @@ class UpdateProductRequest extends FormRequest
             'category_id.exists' => 'Kategori produk tidak valid.',
             'images.required' => 'Produk wajib memiliki gambar.',
             'images.min' => 'Produk wajib memiliki minimal satu gambar.',
+            'images.max' => 'Jumlah gambar tidak boleh lebih dari 20.',
             'images.*.required' => 'Produk wajib memiliki gambar.',
         ];
     }

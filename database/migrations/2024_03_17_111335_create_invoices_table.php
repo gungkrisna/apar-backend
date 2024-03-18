@@ -36,6 +36,7 @@ return new class extends Migration
             $table->decimal('quantity', 12, 2);
             $table->decimal('unit_price', 12, 2);
             $table->decimal('total_price', 18, 2);
+            $table->date('expiry_date')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();

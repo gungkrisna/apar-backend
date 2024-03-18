@@ -77,6 +77,12 @@ class PermissionsSeeder extends Seeder
             "update purchases",
             "approve purchases",
             "delete purchases",
+
+            "access invoices",
+            "create invoices",
+            "update invoices",
+            "approve invoices",
+            "delete invoices",
         ];
 
         foreach ($permissions as $permission) {
@@ -128,6 +134,16 @@ class PermissionsSeeder extends Seeder
             "create products",
             "update products",
             "delete products",
+
+            "access purchases",
+            "create purchases",
+            "update purchases",
+            "delete purchases",
+
+            "access invoices",
+            "create invoices",
+            "update invoices",
+            "delete invoices",
         ];
 
         foreach ($staffPermissions as $permission) {
