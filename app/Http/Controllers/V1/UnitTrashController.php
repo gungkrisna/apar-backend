@@ -109,10 +109,9 @@ class UnitTrashController extends Controller
         };
 
         try {
-            Unit::onlyTrashed()
-                ->whereIn('id', $request->id)
-                ->forceDelete();
+            $units = Unit::onlyTrashed()->whereIn('id', $request->id);
 
+            $units->forceDelete();
             return ResponseFormatter::success();
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());

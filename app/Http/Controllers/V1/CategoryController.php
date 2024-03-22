@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Exports\V1\CategoriesExport;
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\StoreCategoryRequest;
@@ -11,6 +12,7 @@ use App\Models\Feature;
 use App\Models\Image;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CategoryController extends Controller
 {
@@ -173,13 +175,43 @@ class CategoryController extends Controller
         };
 
         try {
-            Category::withoutTrashed()
-                ->whereIn('id', $request->id)
-                ->delete();
+            $categories = Category::withoutTrashed()->whereIn('id', $request->id);
+            
+            foreach ($categories->get() as $category) {
+                $products = $category->products()->get();
 
+                if ($products->isNotEmpty()) {
+                    return ResponseFormatter::error(409, 'Conflict');
+                }
+            };
+
+            $products->delete();
             return ResponseFormatter::success();
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
+    }
+
+    /**
+     * Export the specified resource from storage.
+     */
+    public function export(Request $request)
+    {
+        if ($request->user()->cannot('access categories')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+        $supplierIds = $request->input('id', []);
+        $startDate = $request->input('startDate', null);
+        $endDate = $request->input('endDate', null);
+        $fileType = $request->input('fileType');
+
+        switch ($fileType) {
+            case 'CSV':
+                return Excel::raw(new CategoriesExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                break;
+            case 'XLSX':
+                return Excel::raw(new CategoriesExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                break;
+        };
     }
 }

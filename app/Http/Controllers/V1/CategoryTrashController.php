@@ -110,16 +110,16 @@ class CategoryTrashController extends Controller
         };
 
         try {
-            $category = Category::onlyTrashed()->whereIn('id', $request->id)->first();
+            $categories = Category::onlyTrashed()->whereIn('id', $request->id);
 
-            if ($category) {
+            foreach ($categories->get() as $category) {
                 if ($category->image) {
                     Storage::disk('public')->delete($category->image->path);
                     $category->image->delete();
                 }
                 $category->forceDelete();
             }
-
+            
             return ResponseFormatter::success();
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
@@ -136,9 +136,11 @@ class CategoryTrashController extends Controller
         }
 
         try {
-            $trashedCategories = Category::onlyTrashed()->with('image')->get();
+            DB::beginTransaction();
 
-            foreach ($trashedCategories as $category) {
+            $categories = Category::onlyTrashed()->with('image');
+
+            foreach ($categories->get() as $category) {
                 if ($category->image) {
                     Storage::disk('public')->delete($category->image->path);
                     $category->image->delete();

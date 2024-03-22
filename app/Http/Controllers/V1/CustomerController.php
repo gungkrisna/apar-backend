@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Exports\V1\CustomersExport;
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\StoreCustomerRequest;
 use App\Http\Requests\V1\UpdateCustomerRequest;
 use App\Models\Customer;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CustomerController extends Controller
 {
@@ -141,13 +143,44 @@ class CustomerController extends Controller
         };
 
         try {
-            Customer::withoutTrashed()
-                ->whereIn('id', $request->id)
-                ->delete();
+            $customers = Customer::withoutTrashed()->whereIn('id', $request->id);
+
+            foreach ($customers->get() as $customer) {
+                $invoices = $customer->invoices()->get();
+
+                if ($invoices->isNotEmpty()) {
+                    return ResponseFormatter::error(409, 'Conflict');
+                }
+            };
+
+            $customers->delete();
 
             return ResponseFormatter::success();
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
+    }
+
+    /**
+     * Export the specified resource from storage.
+     */
+    public function export(Request $request)
+    {
+        if ($request->user()->cannot('access customers')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+        $supplierIds = $request->input('id', []);
+        $startDate = $request->input('startDate', null);
+        $endDate = $request->input('endDate', null);
+        $fileType = $request->input('fileType');
+
+        switch ($fileType) {
+            case 'CSV':
+                return Excel::raw(new CustomersExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                break;
+            case 'XLSX':
+                return Excel::raw(new CustomersExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                break;
+        };
     }
 }

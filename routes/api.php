@@ -116,6 +116,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::controller(CategoryController::class)->group(function () {
             Route::post('/', 'store')->name('store');
+            Route::get('/export', 'export')->name('export');
             Route::get('/{category}', 'show')->name('show');
             Route::get('/', 'index')->name('index');
             Route::put('/{category}', 'update')->name('update');
@@ -133,6 +134,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::controller(UnitController::class)->group(function () {
             Route::post('/', 'store')->name('store');
+            Route::get('/export', 'export')->name('export');
             Route::get('/{unit}', 'show')->name('show');
             Route::get('/', 'index')->name('index');
             Route::put('/{unit}', 'update')->name('update');
@@ -157,6 +159,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/serial-number/generate', 'generateSerialNumber')->name('generateSerialNumber');
             Route::get('/serial-number/{serialNumber}', 'getBySerialNumber')->name('getBySerialNumber');
             Route::post('/', 'store')->name('store');
+            Route::get('/export', 'export')->name('export');
             Route::get('/{product}', 'show')->name('show');
             Route::get('/', 'index')->name('index');
             Route::put('/{product}', 'update')->name('update');
@@ -174,6 +177,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/po-number/generate', 'generatePurchaseNumber')->name('generatePurchaseNumber');
             Route::post('/{purchase}/approve', 'approve')->name('approve');
             Route::post('/', 'store')->name('store');
+            Route::get('/export', 'export')->name('export');
             Route::get('/{purchase}', 'show')->name('show');
             Route::get('/', 'index')->name('index');
             Route::put('/{purchase}', 'update')->name('update');
@@ -191,6 +195,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/invoice-number/generate', 'generateInvoiceNumber')->name('generateInvoiceNumber');
             Route::post('/{invoice}/approve', 'approve')->name('approve');
             Route::post('/', 'store')->name('store');
+            Route::get('/export', 'export')->name('export');
             Route::get('/{invoice}', 'show')->name('show');
             Route::get('/', 'index')->name('index');
             Route::put('/{invoice}', 'update')->name('update');

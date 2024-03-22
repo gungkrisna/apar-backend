@@ -138,18 +138,9 @@ class ProductTrashController extends Controller
         }
 
         try {
-            $products = Product::onlyTrashed()->whereIn('id', $request->id)->get();
+            $products = Product::onlyTrashed()->whereIn('id', $request->id);
 
-            foreach ($products as $product) {
-                $invoices = $product->invoiceItems()->get();
-                $purchases = $product->purchaseItems()->get();
-
-                if ($invoices->isNotEmpty() || $purchases->isNotEmpty()) {
-                    return ResponseFormatter::error(409, 'Conflict');
-                }
-            };
-
-            foreach ($products as $product) {
+            foreach ($products->get() as $product) {
                 $product->images()->get()->each(function ($image) {
                     Storage::disk('public')->delete($image->path);
                 });

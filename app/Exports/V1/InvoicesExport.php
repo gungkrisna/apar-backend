@@ -2,7 +2,7 @@
 
 namespace App\Exports\V1;
 
-use App\Models\Supplier;
+use App\Models\Invoice;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -11,18 +11,23 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
 
-class SuppliersExport implements FromCollection, WithHeadings, WithColumnFormatting, WithStyles, WithTitle, ShouldAutoSize
+class InvoicesExport implements FromCollection, WithHeadings, WithColumnFormatting, WithStyles, WithTitle, ShouldAutoSize, WithStrictNullComparison
 {
     use Exportable;
 
-    protected $supplierIds;
+    protected $invoiceIds;
+    protected $customerId;
+    protected $status;
     protected $startDate;
     protected $endDate;
 
-    public function __construct(array $supplierIds = [], $startDate = null, $endDate = null)
+    public function __construct(array $invoiceIds = [], $customerId = null, $status = null, $startDate = null, $endDate = null)
     {
-        $this->supplierIds = $supplierIds;
+        $this->invoiceIds = $invoiceIds;
+        $this->customerId = $customerId;
+        $this->status = $status;
         $this->startDate = $startDate;
         $this->endDate = $endDate;
     }
@@ -32,10 +37,15 @@ class SuppliersExport implements FromCollection, WithHeadings, WithColumnFormatt
      */
     public function collection()
     {
-        $query = Supplier::query();
+        $query = Invoice::query();
+        $query->with(['customer', 'invoiceItems']);
 
-        if (!empty($this->supplierIds)) {
-            $query->whereIn('id', $this->supplierIds);
+        if (!empty($this->invoiceIds)) {
+            $query->whereIn('id', $this->invoiceIds);
+        }
+
+        if (!empty($this->customerId)) {
+            $query->whereIn('customer_id', $this->customerId);
         }
 
         if (!empty($this->startDate)) {
@@ -46,10 +56,24 @@ class SuppliersExport implements FromCollection, WithHeadings, WithColumnFormatt
             $query->where('created_at', '<=', $this->endDate);
         }
 
-        $columns = ["id", "name", "phone", "email", "address", "created_at", "updated_at"];
-        $query->select($columns);
+        // Transform the results into an array format matching the headings
+        $data = $query->get()->map(function ($item) {
+            return [
+                $item->id,
+                $item->status == 1 ? 'Disetujui' : 'Pending',
+                $item->invoice_number,
+                $item->customer->company_name,
+                $item->invoiceItems->sum('total_price'),
+                $item->customer->pic_name,
+                $item->customer->phone,
+                $item->customer->email,
+                $item->customer->address,
+                $item->created_at,
+                $item->updated_at,
+            ];
+        });
 
-        return $query->get();
+        return $data;
     }
 
     /**
@@ -59,12 +83,16 @@ class SuppliersExport implements FromCollection, WithHeadings, WithColumnFormatt
     {
         return [
             'ID',
-            'Nama',
-            'Telepon',
+            'Status',
+            'No. Invoice',
+            'Nama Perusahaan',
+            'Total',
+            'Person in Contact',
             'Email',
+            'Telepon',
             'Alamat',
             'Tanggal Dibuat',
-            'Terakhir Diperbarui'
+            'Terakhir Diperbarui',
         ];
     }
     /**
@@ -100,6 +128,6 @@ class SuppliersExport implements FromCollection, WithHeadings, WithColumnFormatt
      */
     public function title(): string
     {
-        return 'Suppliers';
+        return 'Invoices';
     }
 }

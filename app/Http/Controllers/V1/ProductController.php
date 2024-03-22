@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Exports\V1\ProductsExport;
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\StoreProductRequest;
@@ -11,6 +12,7 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 use Picqer\Barcode\BarcodeGeneratorJPG;
 use Picqer\Barcode\BarcodeGeneratorPNG;
 use Picqer\Barcode\BarcodeGeneratorSVG;
@@ -290,9 +292,9 @@ class ProductController extends Controller
         };
 
         try {
-            $products = Product::withoutTrashed()->whereIn('id', $request->id)->get();
+            $products = Product::withoutTrashed()->whereIn('id', $request->id);
             
-            foreach ($products as $product) {
+            foreach ($products->get() as $product) {
                 $invoices = $product->invoiceItems()->get();
                 $purchases = $product->purchaseItems()->get();
 
@@ -301,13 +303,35 @@ class ProductController extends Controller
                 }
             };
 
-            Product::withoutTrashed()
-                ->whereIn('id', $request->id)
-                ->delete();
-
+            $products->delete();
             return ResponseFormatter::success();
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
+    }
+
+    /**
+     * Export the specified resource from storage.
+     */
+    public function export(Request $request)
+    {
+        if ($request->user()->cannot('access suppliers')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+        $productIds = $request->input('id', []);
+        $supplierId = $request->input('supplier', null);
+        $categoryId = $request->input('category', null);
+        $startDate = $request->input('startDate', null);
+        $endDate = $request->input('endDate', null);
+        $fileType = $request->input('fileType');
+
+        switch ($fileType) {
+            case 'CSV':
+                return Excel::raw(new ProductsExport($productIds, $supplierId, $categoryId, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                break;
+            case 'XLSX':
+                return Excel::raw(new ProductsExport($productIds, $supplierId, $categoryId, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                break;
+        };
     }
 }

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Exports\V1\UnitsExport;
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\StoreUnitRequest;
 use App\Http\Requests\V1\UpdateUnitRequest;
 use App\Models\Unit;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class UnitController extends Controller
 {
@@ -128,13 +130,43 @@ class UnitController extends Controller
         };
 
         try {
-            Unit::withoutTrashed()
-                ->whereIn('id', $request->id)
-                ->delete();
+            $units = Unit::withoutTrashed()->whereIn('id', $request->id);
 
+            foreach ($units->get() as $unit) {
+                $products = $unit->products()->get();
+
+                if ($products->isNotEmpty()) {
+                    return ResponseFormatter::error(409, 'Conflict');
+                }
+            };
+
+            $units->delete();
             return ResponseFormatter::success();
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
+    }
+
+    /**
+     * Export the specified resource from storage.
+     */
+    public function export(Request $request)
+    {
+        if ($request->user()->cannot('access units')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+        $supplierIds = $request->input('id', []);
+        $startDate = $request->input('startDate', null);
+        $endDate = $request->input('endDate', null);
+        $fileType = $request->input('fileType');
+
+        switch ($fileType) {
+            case 'CSV':
+                return Excel::raw(new UnitsExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                break;
+            case 'XLSX':
+                return Excel::raw(new UnitsExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                break;
+        };
     }
 }

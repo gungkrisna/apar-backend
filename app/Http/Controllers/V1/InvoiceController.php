@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Exports\V1\InvoicesExport;
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\StoreInvoiceRequest;
@@ -12,6 +13,7 @@ use App\Models\InvoiceItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 
 class InvoiceController extends Controller
 {
@@ -307,5 +309,30 @@ class InvoiceController extends Controller
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
+    }
+
+    /**
+     * Export the specified resource from storage.
+     */
+    public function export(Request $request)
+    {
+        if ($request->user()->cannot('access suppliers')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+        $productIds = $request->input('id', []);
+        $customerId = $request->input('customer', null);
+        $status = $request->input('status', null);
+        $startDate = $request->input('startDate', null);
+        $endDate = $request->input('endDate', null);
+        $fileType = $request->input('fileType');
+
+        switch ($fileType) {
+            case 'CSV':
+                return Excel::raw(new InvoicesExport($productIds, $customerId, $status, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                break;
+            case 'XLSX':
+                return Excel::raw(new InvoicesExport($productIds, $customerId, $status, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                break;
+        };
     }
 }

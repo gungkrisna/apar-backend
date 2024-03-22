@@ -21,14 +21,19 @@ class Category extends Model
         'updated_by',
     ];
 
-    public function features()
+    public function products()
     {
-        return $this->hasMany(Feature::class);
+        return $this->hasMany(Product::class);
     }
 
     public function image(): MorphOne
     {
         return $this->morphOne(Image::class, 'imageable')->where('collection_name', 'category_image');
+    }
+
+    public function features()
+    {
+        return $this->hasMany(Feature::class);
     }
 
     public function createdBy()

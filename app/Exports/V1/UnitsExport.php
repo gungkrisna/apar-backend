@@ -2,7 +2,7 @@
 
 namespace App\Exports\V1;
 
-use App\Models\Supplier;
+use App\Models\Unit;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -12,17 +12,17 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 
-class SuppliersExport implements FromCollection, WithHeadings, WithColumnFormatting, WithStyles, WithTitle, ShouldAutoSize
+class UnitsExport implements FromCollection, WithHeadings, WithColumnFormatting, WithStyles, WithTitle, ShouldAutoSize
 {
     use Exportable;
 
-    protected $supplierIds;
+    protected $unitIds;
     protected $startDate;
     protected $endDate;
 
-    public function __construct(array $supplierIds = [], $startDate = null, $endDate = null)
+    public function __construct(array $unitIds = [], $startDate = null, $endDate = null)
     {
-        $this->supplierIds = $supplierIds;
+        $this->unitIds = $unitIds;
         $this->startDate = $startDate;
         $this->endDate = $endDate;
     }
@@ -32,10 +32,10 @@ class SuppliersExport implements FromCollection, WithHeadings, WithColumnFormatt
      */
     public function collection()
     {
-        $query = Supplier::query();
+        $query = Unit::query();
 
-        if (!empty($this->supplierIds)) {
-            $query->whereIn('id', $this->supplierIds);
+        if (!empty($this->unitIds)) {
+            $query->whereIn('id', $this->unitIds);
         }
 
         if (!empty($this->startDate)) {
@@ -46,10 +46,9 @@ class SuppliersExport implements FromCollection, WithHeadings, WithColumnFormatt
             $query->where('created_at', '<=', $this->endDate);
         }
 
-        $columns = ["id", "name", "phone", "email", "address", "created_at", "updated_at"];
-        $query->select($columns);
+        $columns = ["id", "name", "created_at", "updated_at"];
 
-        return $query->get();
+        return $query->select($columns)->get();
     }
 
     /**
@@ -59,10 +58,7 @@ class SuppliersExport implements FromCollection, WithHeadings, WithColumnFormatt
     {
         return [
             'ID',
-            'Nama',
-            'Telepon',
-            'Email',
-            'Alamat',
+            'Nama Unit of Measure',
             'Tanggal Dibuat',
             'Terakhir Diperbarui'
         ];
@@ -100,6 +96,6 @@ class SuppliersExport implements FromCollection, WithHeadings, WithColumnFormatt
      */
     public function title(): string
     {
-        return 'Suppliers';
+        return 'Units';
     }
 }

@@ -110,9 +110,7 @@ public function index(Request $request)
         };
 
         try {
-            Supplier::onlyTrashed()
-                ->whereIn('id', $request->id)
-                ->forceDelete();
+            Supplier::onlyTrashed()->whereIn('id', $request->id)->forceDelete();
 
             return ResponseFormatter::success();
         } catch (\Exception $e) {

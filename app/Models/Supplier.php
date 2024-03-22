@@ -25,6 +25,16 @@ class Supplier extends Model
     //     return static::where('deleted_at', '<=', now()->subDays(90));
     // }
 
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');

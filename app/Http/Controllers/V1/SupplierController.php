@@ -9,9 +9,7 @@ use App\Http\Requests\V1\StoreSupplierRequest;
 use App\Http\Requests\V1\UpdateSupplierRequest;
 use Illuminate\Http\Request;
 use App\Models\Supplier;
-use Illuminate\Support\Facades\View;
 use Maatwebsite\Excel\Facades\Excel;
-use Spatie\Browsershot\Browsershot;
 
 class SupplierController extends Controller
 {
@@ -141,16 +139,27 @@ class SupplierController extends Controller
         };
 
         try {
-            Supplier::withoutTrashed()
-                ->whereIn('id', $request->id)
-                ->delete();
+            $suppliers = Supplier::withoutTrashed()->whereIn('id', $request->id);
 
+            foreach ($suppliers->get() as $supplier) {
+                $products = $supplier->products()->get();
+                $purchases = $supplier->purchases()->get();
+
+                if ($products->isNotEmpty() || $purchases->isNotEmpty()) {
+                    return ResponseFormatter::error(409, 'Conflict');
+                }
+            };
+
+            $suppliers->delete();
             return ResponseFormatter::success();
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
     }
 
+    /**
+     * Export the specified resource from storage.
+     */
     public function export(Request $request)
     {
         if ($request->user()->cannot('access suppliers')) {
@@ -168,34 +177,6 @@ class SupplierController extends Controller
             case 'XLSX':
                 return Excel::raw(new SuppliersExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
                 break;
-            case 'PDF':
-                // Create a query builder for the Supplier model
-                $query = Supplier::query();
-
-                // Apply filtering conditions
-                if (!empty($supplierIds)) {
-                    $query->whereIn('id', $supplierIds);
-                }
-
-                if (!empty($startDate)) {
-                    $query->where('created_at', '>=', $startDate);
-                }
-
-                if (!empty($endDate)) {
-                    $query->where('created_at', '<=', $endDate);
-                }
-
-                // Retrieve the filtered data
-                $suppliers = $query->get();
-
-                $html = View::make('supplier-table', compact('suppliers'))->with('model', 'Supplier')->render();
-                $pdf = Browsershot::html($html)
-                    ->landscape()
-                    ->format('A4')
-                    ->waitUntilNetworkIdle()
-                    ->showBrowserHeaderAndFooter()
-                    ->pdf();
-                return response($pdf)->header('Content-Type', 'application/pdf');
         };
     }
 }

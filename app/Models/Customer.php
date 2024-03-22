@@ -27,6 +27,11 @@ class Customer extends Model
     //     return static::where('deleted_at', '<=', now()->subDays(90));
     // }
 
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');

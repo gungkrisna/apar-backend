@@ -111,9 +111,7 @@ class CustomerTrashController extends Controller
         };
 
         try {
-            Customer::onlyTrashed()
-                ->whereIn('id', $request->id)
-                ->forceDelete();
+            Customer::onlyTrashed()->whereIn('id', $request->id)->forceDelete();
 
             return ResponseFormatter::success();
         } catch (\Exception $e) {
