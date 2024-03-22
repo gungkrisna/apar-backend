@@ -20,13 +20,13 @@ public function index(Request $request)
         }
 
         try {
-            $validColumns = ['id', 'name', 'phone', 'email', 'address', 'created_at', 'updated_at'];
-
             $filter = $request->query('filter');
-            $columns = $request->query('columns', $validColumns);
 
-            $columns = array_intersect($columns, $validColumns);
-            $query = Supplier::onlyTrashed()->orderBy('created_at', 'desc')->select($columns);
+            $query = Supplier::onlyTrashed()->orderBy('created_at', 'desc');
+
+            if ($request->has('columns')) {
+                $query = $query->select(explode(',', $request->columns));
+            }
 
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
@@ -37,26 +37,20 @@ public function index(Request $request)
                 });
             }
 
-        if (!$request->has('pageIndex') && !$request->has('pageSize')) {
-            $data = $query->get();
-            $responseData = [
-                'rows' => $data,
-                'totalRowCount' => $query->count(),
-                'filteredRowCount' => $query->count(),
-                'pageCount' => 1,
-            ];
-        } else {
-            $pageIndex = $request->query('pageIndex', 1);
-            $pageSize = $request->query('pageSize', $query->count());
-            $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
+            if (!$request->has('pageIndex') && !$request->has('pageSize')) {
+                $responseData = $query->get();
+            } else {
+                $pageIndex = $request->query('pageIndex', 1);
+                $pageSize = $request->query('pageSize', $query->count());
+                $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
-            $responseData = [
-                'totalRowCount' => Supplier::onlyTrashed()->count(),
-                'filteredRowCount' => $query->count(),
-                'pageCount' => $data->lastPage(),
-                'rows' => $data->items(),
-            ];
-        }
+                $responseData = [
+                    'totalRowCount' => Supplier::onlyTrashed()->count(),
+                    'filteredRowCount' => $query->count(),
+                    'pageCount' => $data->lastPage(),
+                    'rows' => $data->items(),
+                ];
+            }
 
             return ResponseFormatter::success(data: $responseData);
         } catch (\Exception $e) {

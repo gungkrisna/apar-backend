@@ -32,7 +32,7 @@ return new class extends Migration
             $table->unsignedBigInteger('invoice_id');
             $table->unsignedBigInteger('category_id');
             $table->unsignedBigInteger('product_id');
-            $table->string('description')->nullable();
+            $table->text('description')->nullable();
             $table->decimal('quantity', 12, 2);
             $table->decimal('unit_price', 12, 2);
             $table->decimal('total_price', 18, 2);

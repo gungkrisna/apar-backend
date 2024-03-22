@@ -14,6 +14,7 @@ class Invoice extends Model
         'status',
         'invoice_number',
         'date',
+        'total_price',
         'customer_id',
         'created_by',
         'updated_by',
@@ -26,7 +27,7 @@ class Invoice extends Model
 
     public function customer()
     {
-        return $this->belongsTo(Customer::class, 'customer_id');
+        return $this->belongsTo(Customer::class);
     }
 
     public function invoiceItems()
@@ -36,11 +37,11 @@ class Invoice extends Model
 
     public function createdBy()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class);
     }
 
     public function updatedBy()
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->belongsTo(User::class);
     }
 }

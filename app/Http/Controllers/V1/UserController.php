@@ -21,15 +21,14 @@ class UserController extends Controller
             return ResponseFormatter::error('401', 'Unauthorized');
         };
         try {
-            $validColumns = ['id', 'name', 'phone', 'email', 'email_verified_at', 'created_at', 'updated_at'];
-
-            $pageIndex = $request->query('pageIndex');
-            $pageSize = $request->query('pageSize');
             $filter = $request->query('filter');
-            $columns = $request->query('columns', $validColumns);
 
-            $columns = array_intersect($columns, $validColumns);
-            $query = User::query()->select($columns);
+            $query = User::orderBy('created_at', 'desc');
+
+            if ($request->has('columns')) {
+                $query = $query->select(explode(',', $request->columns));
+            }
+
 
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {

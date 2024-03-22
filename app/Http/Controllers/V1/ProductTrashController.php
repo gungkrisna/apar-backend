@@ -21,31 +21,64 @@ class ProductTrashController extends Controller
     }
 
     try {
-        $validColumns = ['id', 'name', 'description', 'stock', 'price', 'expiry_period', 'created_at', 'updated_at'];
-
-        $pageIndex = $request->query('pageIndex');
-        $pageSize = $request->query('pageSize');
         $filter = $request->query('filter');
-        $columns = $request->query('columns', $validColumns);
 
-        $columns = array_intersect($columns, $validColumns);
-        $query = Product::onlyTrashed()->orderBy('created_at', 'desc')->with('unit', 'supplier', 'category')->select($columns);
+        $query = Product::with(['images', 'unit', 'supplier', 'category'])
+            ->onlyTrashed()->orderBy('created_at', 'desc');
+
+        if ($request->has('columns')) {
+            $query = $query->select(explode(',', $request->columns));
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('supplier_id')) {
+            $query->where('supplier_id', $request->supplier_id);
+        }
+
+        if ($request->has('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
 
         if ($filter !== null && $filter !== '') {
             $query->where(function ($q) use ($filter) {
                 $q->where('name', 'like', '%' . $filter . '%')
-                    ->orWhere('description', 'like', '%' . $filter . '%');
+                ->orWhere('serial_number', 'like', '%' . $filter . '%')
+                ->orWhere('description', 'like', '%' . $filter . '%')
+                ->orWhereHas('supplier', function ($q) use ($filter) {
+                    $q->where('name', 'like', '%' . $filter . '%');
+                })
+                ->orWhereHas('category', function ($q) use ($filter) {
+                    $q->where('name', 'like', '%' . $filter . '%');
+                })
+                ->orWhereHas('unit', function ($q) use ($filter) {
+                    $q->where('name', 'like', '%' . $filter . '%');
+                })
+                ->orWhereHas('createdBy', function ($q) use ($filter) {
+                    $q->where('name', 'like', '%' . $filter . '%');
+                })
+                ->orWhereHas('updatedBy', function ($q) use ($filter) {
+                    $q->where('name', 'like', '%' . $filter . '%');
+                });
             });
         }
 
-        $data = $query->paginate(perPage: $pageSize ?? $query->count(), page: $pageIndex ?? 0);
+        if (!$request->has('pageIndex') && !$request->has('pageSize')) {
+            $responseData = $query->get();
+        } else {
+            $pageIndex = $request->query('pageIndex', 1);
+            $pageSize = $request->query('pageSize', $query->count());
+            $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
-        $responseData = [
-            'totalRowCount' => Product::onlyTrashed()->count(),
-            'filteredRowCount' => $query->count(),
-            'pageCount' => $data->lastPage(),
-            'rows' => $data->items()
-        ];
+            $responseData = [
+                'totalRowCount' => Product::onlyTrashed()->count(),
+                'filteredRowCount' => $query->count(),
+                'pageCount' => $data->lastPage(),
+                'rows' => $data->items(),
+            ];
+        }
 
         return ResponseFormatter::success(data: $responseData);
     } catch (\Exception $e) {
@@ -105,15 +138,22 @@ class ProductTrashController extends Controller
         }
 
         try {
-            $product = Product::onlyTrashed()->whereIn('id', $request->id)->first();
+            $products = Product::onlyTrashed()->whereIn('id', $request->id)->get();
 
-            if ($product) {
-                // Delete associated images from storage
+            foreach ($products as $product) {
+                $invoices = $product->invoiceItems()->get();
+                $purchases = $product->purchaseItems()->get();
+
+                if ($invoices->isNotEmpty() || $purchases->isNotEmpty()) {
+                    return ResponseFormatter::error(409, 'Conflict');
+                }
+            };
+
+            foreach ($products as $product) {
                 $product->images()->get()->each(function ($image) {
                     Storage::disk('public')->delete($image->path);
                 });
 
-                // Delete the product
                 $product->forceDelete();
             }
 

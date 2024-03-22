@@ -27,15 +27,18 @@ class ProductController extends Controller
     }
 
     try {
-        $validColumns = ['id', 'serial_number', 'name', 'description', 'stock', 'price', 'expiry_period', 'unit_id', 'category_id', 'supplier_id', 'created_by', 'updated_by', 'created_at', 'updated_at'];
-
         $filter = $request->query('filter');
-        $columns = $request->query('columns', $validColumns);
 
-        $columns = array_intersect($columns, $validColumns);
-        $query = Product::with(['images', 'unit', 'supplier', 'category', 'createdBy', 'updatedBy'])
-            ->withoutTrashed()
-            ->orderBy('created_at', 'desc');
+        $query = Product::with(['images', 'unit', 'supplier', 'category'])
+            ->withoutTrashed()->orderBy('created_at', 'desc');
+
+        if ($request->has('columns')) {
+            $query = $query->select(explode(',', $request->columns));
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
 
         if ($request->has('supplier_id')) {
             $query->where('supplier_id', $request->supplier_id);
@@ -69,13 +72,7 @@ class ProductController extends Controller
         }
 
         if (!$request->has('pageIndex') && !$request->has('pageSize')) {
-            $data = $query->get();
-            $responseData = [
-                'rows' => $data,
-                'totalRowCount' => $query->count(),
-                'filteredRowCount' => $query->count(),
-                'pageCount' => 1,
-            ];
+            $responseData = $query->get();
         } else {
             $pageIndex = $request->query('pageIndex', 1);
             $pageSize = $request->query('pageSize', $query->count());
@@ -224,6 +221,25 @@ class ProductController extends Controller
         return ResponseFormatter::success(data: $product);
     }
 
+    public function updateStatus(Request $request)
+    {
+        if ($request->user()->cannot('update products')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        }
+        
+        $validated = $request->validate([
+            'product_ids' => 'required|array',
+            'active' => 'required|boolean',
+        ]);
+
+        $productIds = $validated['product_ids'];
+        $active = $validated['active'];
+
+        Product::whereIn('id', $productIds)->update(['status' => $active]);
+
+        return ResponseFormatter::success();
+    }
+
     /**
      * Generate unique EAN code for serial number.
      */
@@ -274,6 +290,17 @@ class ProductController extends Controller
         };
 
         try {
+            $products = Product::withoutTrashed()->whereIn('id', $request->id)->get();
+            
+            foreach ($products as $product) {
+                $invoices = $product->invoiceItems()->get();
+                $purchases = $product->purchaseItems()->get();
+
+                if ($invoices->isNotEmpty() || $purchases->isNotEmpty()) {
+                    return ResponseFormatter::error(409, 'Conflict');
+                }
+            };
+
             Product::withoutTrashed()
                 ->whereIn('id', $request->id)
                 ->delete();

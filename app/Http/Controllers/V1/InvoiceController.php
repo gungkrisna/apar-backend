@@ -33,12 +33,12 @@ class InvoiceController extends Controller
             $columns = array_intersect($columns, $validColumns);
             $query = Invoice::with('images', 'customer', 'invoiceItems', 'createdBy', 'updatedBy')
                 ->select($columns)
+                ->withSum('invoiceItems as total', 'total_price')
                 ->orderBy('created_at', 'desc');
 
            if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
-                    $q->where('status', 'like', '%' . $filter . '%')
-                        ->orWhere('invoice_number', 'like', '%' . $filter . '%')
+                    $q->where('invoice_number', 'like', '%' . $filter . '%')
                         ->orWhereHas('invoiceItems', function ($q) use ($filter) {
                             $q->where('description', 'like', '%' . $filter . '%')
                                 ->orWhereHas('product', function ($q) use ($filter) {
@@ -49,9 +49,11 @@ class InvoiceController extends Controller
                                 });
                         })
                         ->orWhereHas('customer', function ($q) use ($filter) {
-                            $q->where('name', 'like', '%' . $filter . '%');
-                        })
-                        ->orWhere('description', 'like', '%' . $filter . '%');
+                            $q->where('company_name', 'like', '%' . $filter . '%')
+                            ->orWhere('pic_name', 'like', '%' . $filter . '%')
+                            ->orWhere('phone', 'like', '%' . $filter . '%');
+                        });
+                        // ->orWhere('description', 'like', '%' . $filter . '%');
                 });
          }
 
@@ -143,7 +145,9 @@ class InvoiceController extends Controller
         }
 
         try {
-            $invoice = Invoice::with('images', 'customer', 'invoiceItems', 'invoiceItems.product', 'invoiceItems.category', 'createdBy', 'updatedBy')->find($id);
+            $invoice = Invoice::with('images', 'customer', 'invoiceItems', 'invoiceItems.product', 'invoiceItems.category', 'createdBy', 'updatedBy')
+            ->withSum('invoiceItems as total', 'total_price')
+            ->find($id);
 
             if (!$invoice) {
                 return ResponseFormatter::error(404, 'Not Found');
@@ -230,10 +234,24 @@ class InvoiceController extends Controller
             return ResponseFormatter::error('401', 'Unauthorized');
         };
 
-        Invoice::findOrFail($invoice)->update(['status' => 1]);
+        $invoice = Invoice::findOrFail($invoice);
+        $invoiceItems = $invoice->invoiceItems()->get();
+       
+        foreach ($invoiceItems as $invoiceItem) {
+            if ($invoiceItem->product->stock < $invoiceItem->quantity) {
+                return ResponseFormatter::error(422, 'Unprocessable Entity', 'Beberapa produk pada invoice tidak memiliki stock yang cukup.');
+            }
+        }
+
+        foreach ($invoiceItems as $invoiceItem) {
+            $invoiceItem->product->decrement('stock', $invoiceItem->quantity);
+        }
+        
+        $invoice->update(['status' => 1]);
 
         return ResponseFormatter::success();
     }
+
     /**
      * Generate invoice number.
      */

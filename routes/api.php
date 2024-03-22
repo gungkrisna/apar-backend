@@ -153,6 +153,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
 
         Route::controller(ProductController::class)->group(function () {
+            Route::put('/update-status', 'updateStatus')->name('updateStatus');
             Route::post('/serial-number/generate', 'generateSerialNumber')->name('generateSerialNumber');
             Route::get('/serial-number/{serialNumber}', 'getBySerialNumber')->name('getBySerialNumber');
             Route::post('/', 'store')->name('store');

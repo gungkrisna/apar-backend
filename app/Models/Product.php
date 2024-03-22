@@ -31,6 +31,10 @@ class Product extends Model
     //     return static::where('deleted_at', '<=', now()->subDays(90));
     // }
 
+    private function num($num)
+    {
+        return intval($num) == $num ? intval($num) : $num;
+    }
 
     public function getStockAttribute($value)
     {
@@ -42,11 +46,6 @@ class Product extends Model
         return $this->num($value);
     }
 
-    public function num($num)
-    {
-        return intval($num) == $num ? intval($num) : $num;
-    }
-
     public function images(): MorphMany
     {
         return $this->morphMany(Image::class, 'imageable')->where('collection_name', 'product_images');
@@ -54,17 +53,27 @@ class Product extends Model
 
     public function unit()
     {
-        return $this->belongsTo(Unit::class, 'unit_id');
+        return $this->belongsTo(Unit::class);
     }
 
     public function supplier()
     {
-        return $this->belongsTo(Supplier::class, 'supplier_id');
+        return $this->belongsTo(Supplier::class,);
     }
 
     public function category()
     {
-        return $this->belongsTo(Category::class, 'category_id');
+        return $this->belongsTo(Category::class);
+    }
+
+    public function invoiceItems()
+    {
+        return $this->hasMany(InvoiceItem::class);
+    }
+
+    public function purchaseItems()
+    {
+        return $this->hasMany(PurchaseItem::class);
     }
 
     public function createdBy()

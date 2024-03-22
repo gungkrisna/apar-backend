@@ -21,15 +21,13 @@ class CustomerController extends Controller
         }
 
         try {
-            $validColumns = ['id', 'company_name', 'pic_name', 'phone', 'email', 'address', 'created_at', 'updated_at'];
-
             $filter = $request->query('filter');
-            $columns = $request->query('columns', $validColumns);
 
-            $columns = array_intersect($columns, $validColumns);
-            $query = Customer::withoutTrashed()
-                ->orderBy('created_at', 'desc')
-                ->select($columns);
+            $query = Customer::withoutTrashed()->orderBy('created_at', 'desc');
+
+            if ($request->has('columns')) {
+                $query = $query->select(explode(',', $request->columns));
+            }
 
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
@@ -42,15 +40,9 @@ class CustomerController extends Controller
                 });
             }
 
-        if (!$request->has('pageIndex') && !$request->has('pageSize')) {
-            $data = $query->get();
-            $responseData = [
-                'rows' => $data,
-                'totalRowCount' => $query->count(),
-                'filteredRowCount' => $query->count(),
-                'pageCount' => 1,
-            ];
-        } else {
+            if (!$request->has('pageIndex') && !$request->has('pageSize')) {
+                $responseData = $query->get();
+            } else {
             $pageIndex = $request->query('pageIndex', 1);
             $pageSize = $request->query('pageSize', $query->count());
             $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);

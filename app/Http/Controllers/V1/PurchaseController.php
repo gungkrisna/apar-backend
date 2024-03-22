@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\StorePurchaseRequest;
 use App\Http\Requests\V1\UpdatePurchaseRequest;
 use App\Models\Image;
+use App\Models\Invoice;
+use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use Illuminate\Http\Request;
@@ -24,15 +26,15 @@ class PurchaseController extends Controller
         }
 
         try {
-            $validColumns = ['id', 'status', 'purchase_number', 'date', 'supplier_id', 'created_by', 'updated_by'];
-
             $filter = $request->query('filter');
-            $columns = $request->query('columns', $validColumns);
 
-            $columns = array_intersect($columns, $validColumns);
-            $query = Purchase::with('images', 'supplier', 'purchaseItems', 'createdBy', 'updatedBy')
-                ->select($columns)
-                ->orderBy('created_at', 'desc');
+            $query = Purchase::with(['images', 'supplier', 'purchaseItems']);
+
+            if ($request->has('columns')) {
+                $query = $query = $query->select(explode(',', $request->columns));
+            } 
+
+            $query = $query->withSum('purchaseItems as total', 'total_price')->orderBy('created_at', 'desc');
 
            if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
@@ -49,20 +51,13 @@ class PurchaseController extends Controller
                         })
                         ->orWhereHas('supplier', function ($q) use ($filter) {
                             $q->where('name', 'like', '%' . $filter . '%');
-                        })
-                        ->orWhere('description', 'like', '%' . $filter . '%');
+                        });
+                        // ->orWhere('description', 'like', '%' . $filter . '%');
                 });
          }
 
-
         if (!$request->has('pageIndex') && !$request->has('pageSize')) {
-            $data = $query->get();
-            $responseData = [
-                'rows' => $data,
-                'totalRowCount' => $query->count(),
-                'filteredRowCount' => $query->count(),
-                'pageCount' => 1,
-            ];
+                $responseData = $query->get();
         } else {
             $pageIndex = $request->query('pageIndex', 1);
             $pageSize = $request->query('pageSize', $query->count());
@@ -135,7 +130,9 @@ class PurchaseController extends Controller
         }
 
         try {
-            $purchase = Purchase::with('images', 'supplier', 'purchaseItems', 'purchaseItems.product', 'purchaseItems.category', 'createdBy', 'updatedBy')->find($id);
+            $purchase = Purchase::with('images', 'supplier', 'purchaseItems', 'purchaseItems.product', 'purchaseItems.category', 'createdBy', 'updatedBy')
+                        ->withSum('purchaseItems as total', 'total_price')
+                        ->find($id);
 
             if (!$purchase) {
                 return ResponseFormatter::error(404, 'Not Found');
@@ -222,7 +219,14 @@ class PurchaseController extends Controller
             return ResponseFormatter::error('401', 'Unauthorized');
         };
 
-        Purchase::findOrFail($purchase)->update(['status' => 1]);
+        $purchase = Purchase::findOrFail($purchase);
+        $purchaseItems = $purchase->purchaseItems()->get();
+ 
+        foreach ($purchaseItems as $purchaseItem) {
+            $purchaseItem->product->increment('stock', $purchaseItem->quantity);
+        }
+
+        $purchase->update(['status' => 1]);
 
         return ResponseFormatter::success();
     }
