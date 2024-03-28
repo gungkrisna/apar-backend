@@ -17,9 +17,7 @@ class Customer extends Model
         'pic_name',
         'phone',
         'email',
-        'address',
-        'created_by',
-        'updated_by',
+        'address'
     ];
 
     // make sure it doesnt prune data that has relation
@@ -31,14 +29,4 @@ class Customer extends Model
     {
         return $this->hasMany(Invoice::class);
     }
-
-    public function createdBy()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function updatedBy()
-    {
-        return $this->belongsTo(User::class, 'updated_by');
-    } 
 }

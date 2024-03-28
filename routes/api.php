@@ -10,6 +10,7 @@ use App\Http\Controllers\V1\CategoryImageController;
 use App\Http\Controllers\V1\CategoryTrashController;
 use App\Http\Controllers\V1\CustomerController;
 use App\Http\Controllers\V1\CustomerTrashController;
+use App\Http\Controllers\V1\DashboardController;
 use App\Http\Controllers\V1\FeatureController;
 use App\Http\Controllers\V1\InvoiceController;
 use App\Http\Controllers\V1\InvoiceImageController;
@@ -43,6 +44,12 @@ use App\Http\Resources\UserResource;
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', function (Request $request) {
         return new UserResource($request->user());
+    });
+
+    Route::prefix('dashboard')->as('dashboard.')->group(function () {
+        Route::controller(DashboardController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+        });
     });
 
     Route::prefix('profile')->as('profile.')->group(function () {
@@ -106,7 +113,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::controller(CategoryImageController::class)->group(function () {
             Route::post('/image', 'store')->name('store');
             Route::delete('/image/{id}', 'destroy')->name('destroy');
-        });    
+        });
         Route::controller(CategoryTrashController::class)->group(function () {
             Route::get('/trash', 'index')->name('trash.index');
             Route::put('/trash', 'restore')->name('trash.restore');
@@ -146,7 +153,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::controller(ProductImageController::class)->group(function () {
             Route::post('/image', 'store')->name('store');
             Route::delete('/image/{id}', 'destroy')->name('destroy');
-        });    
+        });
         Route::controller(ProductTrashController::class)->group(function () {
             Route::get('/trash', 'index')->name('trash.index');
             Route::put('/trash', 'restore')->name('trash.restore');
@@ -171,7 +178,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::controller(PurchaseImageController::class)->group(function () {
             Route::post('/image', 'store')->name('store');
             Route::delete('/image/{id}', 'destroy')->name('destroy');
-        });    
+        });
 
         Route::controller(PurchaseController::class)->group(function () {
             Route::post('/po-number/generate', 'generatePurchaseNumber')->name('generatePurchaseNumber');
@@ -189,7 +196,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::controller(InvoiceImageController::class)->group(function () {
             Route::post('/image', 'store')->name('store');
             Route::delete('/image/{id}', 'destroy')->name('destroy');
-        });    
+        });
 
         Route::controller(InvoiceController::class)->group(function () {
             Route::post('/invoice-number/generate', 'generateInvoiceNumber')->name('generateInvoiceNumber');

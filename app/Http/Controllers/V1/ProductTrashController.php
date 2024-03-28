@@ -17,71 +17,65 @@ class ProductTrashController extends Controller
     public function index(Request $request)
     {
         if ($request->user()->cannot('access products')) {
-        return ResponseFormatter::error('401', 'Unauthorized');
-    }
-
-    try {
-        $filter = $request->query('filter');
-
-        $query = Product::with(['images', 'unit', 'supplier', 'category'])
-            ->onlyTrashed()->orderBy('created_at', 'desc');
-
-        if ($request->has('columns')) {
-            $query = $query->select(explode(',', $request->columns));
+            return ResponseFormatter::error('401', 'Unauthorized');
         }
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
+        try {
+            $filter = $request->query('filter');
 
-        if ($request->has('supplier_id')) {
-            $query->where('supplier_id', $request->supplier_id);
-        }
+            $query = Product::with(['images', 'unit', 'supplier', 'category'])
+                ->onlyTrashed()->orderBy('created_at', 'desc');
 
-        if ($request->has('category_id')) {
-            $query->where('category_id', $request->category_id);
-        }
+            if ($request->has('columns')) {
+                $query = $query->select(explode(',', $request->columns));
+            }
 
-        if ($filter !== null && $filter !== '') {
-            $query->where(function ($q) use ($filter) {
-                $q->where('name', 'like', '%' . $filter . '%')
-                ->orWhere('serial_number', 'like', '%' . $filter . '%')
-                ->orWhere('description', 'like', '%' . $filter . '%')
-                ->orWhereHas('supplier', function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%');
-                })
-                ->orWhereHas('category', function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%');
-                })
-                ->orWhereHas('unit', function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%');
-                })
-                ->orWhereHas('createdBy', function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%');
-                })
-                ->orWhereHas('updatedBy', function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%');
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has('supplier_id')) {
+                $query->where('supplier_id', $request->supplier_id);
+            }
+
+            if ($request->has('category_id')) {
+                $query->where('category_id', $request->category_id);
+            }
+
+            if ($filter !== null && $filter !== '') {
+                $query->where(function ($q) use ($filter) {
+                    $q->where('name', 'like', '%' . $filter . '%')
+                        ->orWhere('serial_number', 'like', '%' . $filter . '%')
+                        ->orWhere('description', 'like', '%' . $filter . '%')
+                        ->orWhereHas('supplier', function ($q) use ($filter) {
+                            $q->where('name', 'like', '%' . $filter . '%');
+                        })
+                        ->orWhereHas('category', function ($q) use ($filter) {
+                            $q->where('name', 'like', '%' . $filter . '%');
+                        })
+                        ->orWhereHas('unit', function ($q) use ($filter) {
+                            $q->where('name', 'like', '%' . $filter . '%');
+                        });
                 });
-            });
-        }
+            }
 
-        if (!$request->has('pageIndex') && !$request->has('pageSize')) {
-            $responseData = $query->get();
-        } else {
-            $pageIndex = $request->query('pageIndex', 1);
-            $pageSize = $request->query('pageSize', $query->count());
-            $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
+            if (!$request->has('pageIndex') && !$request->has('pageSize')) {
+                $responseData = $query->get();
+            } else {
+                $pageIndex = $request->query('pageIndex', 1);
+                $pageSize = $request->query('pageSize', $query->count());
+                $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
-            $responseData = [
-                'totalRowCount' => Product::onlyTrashed()->count(),
-                'filteredRowCount' => $query->count(),
-                'pageCount' => $data->lastPage(),
-                'rows' => $data->items(),
-            ];
-        }
+                $responseData = [
+                    'totalRowCount' => Product::onlyTrashed()->count(),
+                    'filteredRowCount' => $query->count(),
+                    'pageCount' => $data->lastPage(),
+                    'rows' => $data->items(),
+                ];
+            }
 
-        return ResponseFormatter::success(data: $responseData);
-    } catch (\Exception $e) {
+            return ResponseFormatter::success(data: $responseData);
+        } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
     }
@@ -175,7 +169,6 @@ class ProductTrashController extends Controller
                     $image->delete();
                 });
 
-                // Force delete the product
                 $product->forceDelete();
             }
 

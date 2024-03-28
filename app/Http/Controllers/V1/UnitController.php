@@ -67,8 +67,7 @@ class UnitController extends Controller
         $validated = $request->validated();
 
         $unit = Unit::create([
-            'name' => $validated['name'],
-            'created_by' => $request->user()->id
+            'name' => $validated['name']
         ]);
 
         return ResponseFormatter::success(data: $unit);

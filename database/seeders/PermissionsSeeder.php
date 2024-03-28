@@ -17,6 +17,8 @@ class PermissionsSeeder extends Seeder
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         $permissions = [
+            'access dashboard',
+
             "access permissions",
             "create permissions",
             "update permissions",
@@ -95,7 +97,7 @@ class PermissionsSeeder extends Seeder
 
         $superAdminRole = Role::where("name", "Super Admin")->first();
 
-        if(!$superAdminRole){
+        if (!$superAdminRole) {
             $superAdminRole = Role::create(["name" => "Super Admin"]);
         }
 
@@ -105,11 +107,13 @@ class PermissionsSeeder extends Seeder
 
         $staffRole = Role::where("name", "Staff")->first();
 
-        if(!$staffRole){
+        if (!$staffRole) {
             $staffRole = Role::create(["name" => "Staff"]);
         }
 
         $staffPermissions = [
+            'access dashboard',
+
             "access customers",
             "create customers",
             "update customers",

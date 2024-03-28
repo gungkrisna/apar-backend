@@ -16,24 +16,23 @@ class PurchaseItem extends Model
         'description',
         'unit_price',
         'quantity',
-        'total_price',
-        'created_by',
-        'updated_by',
     ];
 
-    public function getUnitPriceAttribute($value)
-    {
-        return $this->num($value);
-    }
+    protected $appends = ['total_price'];
 
     public function getQuantityAttribute($value)
     {
         return $this->num($value);
     }
 
-    public function getTotalPriceAttribute($value)
+    public function getUnitPriceAttribute($value)
     {
         return $this->num($value);
+    }
+
+    public function getTotalPriceAttribute()
+    {
+        return $this->num($this->quantity * $this->unit_price);
     }
 
     public function num($num)
@@ -54,15 +53,5 @@ class PurchaseItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
-    }
-
-    public function createdBy()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function updatedBy()
-    {
-        return $this->belongsTo(User::class, 'updated_by');
     }
 }

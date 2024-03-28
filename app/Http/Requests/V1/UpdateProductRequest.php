@@ -25,36 +25,37 @@ class UpdateProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-        'status' => 'required',
-        'serial_number' => 'required',
-        'name' => 'required',
-        'description' => 'required',
-        'price' => 'required|numeric|min:0',
-        'expiry_period' => 'nullable|numeric',
-        'unit_id' => 'required|exists:units,id',
-        'supplier_id' => 'required|exists:suppliers,id',
-        'category_id' => 'required|exists:categories,id',
-        'images' => 'required|array|min:1|max:12',
-        'images.*' => 'required|integer|exists:images,id',
+            'status' => 'required',
+            'serial_number' => 'required|unique:products,serial_number,' . $this->route('product'),
+            'name' => 'required',
+            'description' => 'required',
+            'price' => 'required|numeric|min:0',
+            'expiry_period' => 'sometimes|numeric',
+            'unit_id' => 'required|exists:units,id',
+            'supplier_id' => 'required|exists:suppliers,id',
+            'category_id' => 'required|exists:categories,id',
+            'images' => 'required|array|min:1|max:12',
+            'images.*' => 'required|integer|exists:images,id',
         ];
     }
-    
+
     /**
      * Get custom messages for validator errors
      * 
      * @return array
      */
-    public function message()
+    public function messages()
     {
         return [
             'status.required' => 'Status produk harus diisi.',
             'serial_number.required' => 'Serial number produk harus diisi.',
+            'serial_number.unique' => 'Serial number sudah digunakan',
             'name.required' => 'Nama produk harus diisi.',
             'description.required' => 'Deskripsi produk harus diisi.',
             'price.required' => 'Harga produk harus diisi.',
             'price.numeric' => 'Harga produk harus berupa angka.',
             'price.min' => 'Harga produk tidak boleh kurang dari 0.',
-            'expiry_period.numeric' => 'Periode kedaluwarsa harus berupa angka yang merepresentasikan durasi dalam jumlah bulan.',
+            'expiry_period.numeric' => 'Periode kedaluwarsa harus berupa angka.',
             'unit_id.required' => 'Unit produk harus diisi.',
             'unit_id.exists' => 'Unit produk tidak valid.',
             'supplier_id.required' => 'Supplier produk harus diisi.',

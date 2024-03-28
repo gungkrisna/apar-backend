@@ -14,11 +14,30 @@ class Invoice extends Model
         'status',
         'invoice_number',
         'date',
-        'total_price',
-        'customer_id',
-        'created_by',
-        'updated_by',
+        'discount',
+        'tax',
+        'description',
+        'customer_id'
     ];
+
+    protected $appends = ['subtotal', 'total'];
+
+    public function getSubtotalAttribute()
+    {
+        $subtotal = 0;
+        foreach ($this->invoiceItems as $item) {
+            $subtotal += $item->getTotalPriceAttribute();
+        }
+        return $subtotal;
+    }
+
+    public function getTotalAttribute()
+    {
+        $discountedSubtotal = $this->getSubtotalAttribute() - $this->discount;
+        $tax =  $discountedSubtotal * ($this->tax / 100);
+
+        return $discountedSubtotal + $tax;
+    }
 
     public function images(): MorphMany
     {
@@ -33,15 +52,5 @@ class Invoice extends Model
     public function invoiceItems()
     {
         return $this->hasMany(InvoiceItem::class);
-    }
-
-    public function createdBy()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function updatedBy()
-    {
-        return $this->belongsTo(User::class);
     }
 }

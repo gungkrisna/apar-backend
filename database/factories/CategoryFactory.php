@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Category;
+use App\Models\User;
 
 class CategoryFactory extends Factory
 {
@@ -12,8 +13,8 @@ class CategoryFactory extends Factory
     public function definition()
     {
         return [
-            'name' => $this->faker->word,
-            'description' => $this->faker->paragraph(),
+            'name' => fake()->unique()->word(),
+            'description' => fake()->unique()->paragraph(),
         ];
     }
 }

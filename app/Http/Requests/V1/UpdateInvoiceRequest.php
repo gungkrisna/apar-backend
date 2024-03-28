@@ -17,10 +17,6 @@ class UpdateInvoiceRequest extends FormRequest
         if ($invoice->status !== 1 && $this->user()->can('update invoices')) {
             return true;
         }
-
-        // if ($this->user()->role === 'Staff' && $invoice->createdBy->id !== $this->user()->id) {
-        //     return false;
-        // }
             
         return false;
     }
@@ -36,6 +32,9 @@ class UpdateInvoiceRequest extends FormRequest
         'invoice_number' => 'required',
         'date' => 'required',
         'customer_id' => 'required|exists:customers,id',
+        'discount' => 'numeric|min:0',
+        'tax' => 'numeric|min:0',
+        'description' => 'nullable',
 
         'invoice_items' => 'required|array|min:1',
         'invoice_items.*.id' => 'sometimes|nullable|exists:invoice_items,id',
@@ -64,6 +63,8 @@ class UpdateInvoiceRequest extends FormRequest
             'date.required' => 'Tanggal pembelian harus diisi.',
             'customer_id.required' => 'Customer tidak valid.',
             'customer_id.exists' => 'Customer tidak ditemukan.',
+            'discount.numeric' => 'Nilai diskon harus berupa angka.',
+            'tax.numeric' => 'Nilai pajak harus berupa angka.',
 
             'invoice_items.*.id.exists' => 'ID produk tidak valid.',
             'invoice_items.*.category_id.required' => 'Kategori produk harus diisi.',

@@ -15,10 +15,7 @@ class Category extends Model
 
     protected $fillable = [
         'name',
-        'description',
-        'image',
-        'created_by',
-        'updated_by',
+        'description'
     ];
 
     public function products()
@@ -34,15 +31,5 @@ class Category extends Model
     public function features()
     {
         return $this->hasMany(Feature::class);
-    }
-
-    public function createdBy()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function updatedBy()
-    {
-        return $this->belongsTo(User::class, 'updated_by');
     }
 }

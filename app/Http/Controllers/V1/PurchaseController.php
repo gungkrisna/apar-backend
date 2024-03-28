@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Exports\V1\PurchasesExport;
+use App\Exports\V1\PurchaseItemsExport;
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\StorePurchaseRequest;
 use App\Http\Requests\V1\UpdatePurchaseRequest;
 use App\Models\Image;
-use App\Models\Invoice;
-use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PurchaseController extends Controller
 {
@@ -28,13 +29,11 @@ class PurchaseController extends Controller
         try {
             $filter = $request->query('filter');
 
-            $query = Purchase::with(['images', 'supplier', 'purchaseItems']);
+            $query = Purchase::with(['images', 'supplier', 'purchaseItems'])->orderBy('created_at', 'desc');
 
             if ($request->has('columns')) {
                 $query = $query = $query->select(explode(',', $request->columns));
             } 
-
-            $query = $query->withSum('purchaseItems as total', 'total_price')->orderBy('created_at', 'desc');
 
            if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
@@ -51,8 +50,8 @@ class PurchaseController extends Controller
                         })
                         ->orWhereHas('supplier', function ($q) use ($filter) {
                             $q->where('name', 'like', '%' . $filter . '%');
-                        });
-                        // ->orWhere('description', 'like', '%' . $filter . '%');
+                        })
+                        ->orWhere('description', 'like', '%' . $filter . '%');
                 });
          }
 
@@ -88,8 +87,10 @@ class PurchaseController extends Controller
             'status' => 0,
             'purchase_number' => $validated['purchase_number'],
             'date' => $validated['date'],
-            'supplier_id' => $validated['supplier_id'],
-            'created_by' => auth()->id(),
+            'discount' => $validated['discount'] ?? null,
+            'tax' => $validated['tax'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'supplier_id' => $validated['supplier_id']
         ]);
 
         foreach ($validated['purchase_items'] as $purchaseItemData) {
@@ -101,8 +102,6 @@ class PurchaseController extends Controller
             $purchaseItem->description = $purchaseItemData['description'] ?? null;
             $purchaseItem->unit_price = $purchaseItemData['unit_price'];
             $purchaseItem->quantity = $purchaseItemData['quantity'];
-            $purchaseItem->total_price = $purchaseItemData['unit_price'] * $purchaseItemData['quantity'];
-            $purchaseItem->created_by = auth()->id();
 
             $purchaseItem->save();
         }
@@ -130,8 +129,7 @@ class PurchaseController extends Controller
         }
 
         try {
-            $purchase = Purchase::with('images', 'supplier', 'purchaseItems', 'purchaseItems.product', 'purchaseItems.category', 'createdBy', 'updatedBy')
-                        ->withSum('purchaseItems as total', 'total_price')
+            $purchase = Purchase::with('images', 'supplier', 'purchaseItems', 'purchaseItems.product', 'purchaseItems.category')
                         ->find($id);
 
             if (!$purchase) {
@@ -157,8 +155,10 @@ class PurchaseController extends Controller
             'status' => 0,
             'purchase_number' => $validated['purchase_number'],
             'date' => $validated['date'],
-            'supplier_id' => $validated['supplier_id'],
-            'updated_by' => auth()->id(),
+            'discount' => $validated['discount'] ?? 0,
+            'tax' => $validated['tax'] ?? 0,
+            'description' => $validated['description'] ?? null,
+            'supplier_id' => $validated['supplier_id']
         ]);
         
         $currentItemIds = $purchase->purchaseItems()->pluck('id')->toArray();
@@ -172,9 +172,7 @@ class PurchaseController extends Controller
                     'product_id' => $purchaseItemData['product_id'],
                     'description' => $purchaseItemData['description'] ?? null,
                     'unit_price' => $purchaseItemData['unit_price'],
-                    'quantity' => $purchaseItemData['quantity'],
-                    'total_price' => $purchaseItemData['unit_price'] * $purchaseItemData['quantity'],
-                    'updated_by' => auth()->id(),
+                    'quantity' => $purchaseItemData['quantity']
                 ]
             );
         }
@@ -285,5 +283,42 @@ class PurchaseController extends Controller
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
+    }
+
+    /**
+     * Export the specified resource from storage.
+     */
+    public function export(Request $request)
+    {
+        if ($request->user()->cannot('access suppliers')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+        $purchaseIds = $request->input('id', []);
+        $supplierId = $request->input('supplierId', null);
+        $status = $request->input('status', null);
+        $startDate = $request->input('startDate', null);
+        $endDate = $request->input('endDate', null);
+        $isGrouped = $request->input('isGrouped', 1);
+        $fileType = $request->input('fileType');
+
+        if ($isGrouped) {
+            switch ($fileType) {
+                case 'CSV':
+                    return Excel::raw(new PurchasesExport($purchaseIds, $supplierId, $status, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                    break;
+                case 'XLSX':
+                    return Excel::raw(new PurchasesExport($purchaseIds, $supplierId, $status, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                    break;
+            };
+        } else {
+           switch ($fileType) {
+                case 'CSV':
+                    return Excel::raw(new PurchaseItemsExport($purchaseIds, $supplierId, $status, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                    break;
+                case 'XLSX':
+                    return Excel::raw(new PurchaseItemsExport($purchaseIds, $supplierId, $status, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                    break;
+            };
+        };
     }
 }

@@ -63,12 +63,6 @@ class ProductController extends Controller
                 })
                 ->orWhereHas('unit', function ($q) use ($filter) {
                     $q->where('name', 'like', '%' . $filter . '%');
-                })
-                ->orWhereHas('createdBy', function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%');
-                })
-                ->orWhereHas('updatedBy', function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%');
                 });
             });
         }
@@ -109,12 +103,14 @@ class ProductController extends Controller
             'description' => $validated['description'],
             'stock' => 0,
             'price' => $validated['price'],
-            'expiry_period' => $validated['expiry_period'],
             'unit_id' => $validated['unit_id'],
             'supplier_id' => $validated['supplier_id'],
-            'category_id' => $validated['category_id'],
-            'created_by' => auth()->id(),
+            'category_id' => $validated['category_id']
         ]);
+
+        if ($request->has('expiry_period')) {
+            $product->expiry_period($validated['expiry_period']);
+        }
 
         if ($request->filled('images')) {
             $images = $validated['images'];
@@ -140,7 +136,7 @@ class ProductController extends Controller
         }
 
         try {
-            $product = Product::with('images', 'supplier', 'category', 'createdBy', 'updatedBy')->find($id);
+            $product = Product::with('images', 'supplier', 'category')->find($id);
 
             if (!$product) {
                 return ResponseFormatter::error(404, 'Not Found');
@@ -162,7 +158,7 @@ class ProductController extends Controller
         }
 
         try {
-            $product = Product::with('images', 'supplier', 'category', 'createdBy', 'updatedBy')
+            $product = Product::with('images', 'supplier', 'category')
                 ->where('serial_number', $serialNumber)
                 ->first();
 
@@ -191,34 +187,36 @@ class ProductController extends Controller
             'name' => $validated['name'],
             'description' => $validated['description'],
             'price' => $validated['price'],
-            'expiry_period' => $validated['expiry_period'],
             'unit_id' => $validated['unit_id'],
             'supplier_id' => $validated['supplier_id'],
-            'category_id' => $validated['category_id'],
-            'updated_by' => auth()->id(),
+            'category_id' => $validated['category_id']
         ]);
 
-    if ($request->filled('images')) {
-        $images = $validated['images'];
-
-        $currImages = $product->images->pluck('id')->toArray();
-        $imagesToDelete = array_diff($currImages, $images);
-
-        foreach ($imagesToDelete as $imageId) {
-            $image = Image::find($imageId);
-            Storage::disk('public')->delete($image->path);
-            $image->delete();
+        if ($request->has('expiry_period')) {
+            $product->update(['expiry_period' => $validated['expiry_period']]);
         }
 
-        foreach ($images as $imageId) {
-            $image = Image::find($imageId);
-            $image->collection_name = 'product_images';
-            $product->images()->save($image);
+        if ($request->filled('images')) {
+            $images = $validated['images'];
+
+            $currImages = $product->images->pluck('id')->toArray();
+            $imagesToDelete = array_diff($currImages, $images);
+
+            foreach ($imagesToDelete as $imageId) {
+                $image = Image::find($imageId);
+                Storage::disk('public')->delete($image->path);
+                $image->delete();
+            }
+
+            foreach ($images as $imageId) {
+                $image = Image::find($imageId);
+                $image->collection_name = 'product_images';
+                $product->images()->save($image);
+            }
+        } else {
+            // empty images means delete all images if any
+            $product->images()->delete();
         }
-    } else {
-        // empty images means delete all images if any
-        $product->images()->delete();
-    }
 
         return ResponseFormatter::success(data: $product);
     }
@@ -319,18 +317,19 @@ class ProductController extends Controller
             return ResponseFormatter::error('401', 'Unauthorized');
         };
         $productIds = $request->input('id', []);
-        $supplierId = $request->input('supplier', null);
-        $categoryId = $request->input('category', null);
+        $status = $request->input('status', null);
+        $supplierId = $request->input('supplierId', null);
+        $categoryId = $request->input('categoryId', null);
         $startDate = $request->input('startDate', null);
         $endDate = $request->input('endDate', null);
         $fileType = $request->input('fileType');
 
         switch ($fileType) {
             case 'CSV':
-                return Excel::raw(new ProductsExport($productIds, $supplierId, $categoryId, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                return Excel::raw(new ProductsExport($productIds, $status, $supplierId, $categoryId, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
                 break;
             case 'XLSX':
-                return Excel::raw(new ProductsExport($productIds, $supplierId, $categoryId, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                return Excel::raw(new ProductsExport($productIds, $status, $supplierId, $categoryId, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
                 break;
         };
     }

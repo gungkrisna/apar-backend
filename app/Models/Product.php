@@ -22,9 +22,7 @@ class Product extends Model
         'expiry_period',
         'unit_id',
         'supplier_id',
-        'category_id',
-        'created_by',
-        'updated_by',
+        'category_id'
     ];
 
     // public function prunable() {
@@ -74,15 +72,5 @@ class Product extends Model
     public function purchaseItems()
     {
         return $this->hasMany(PurchaseItem::class);
-    }
-
-    public function createdBy()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function updatedBy()
-    {
-        return $this->belongsTo(User::class, 'updated_by');
     }
 }

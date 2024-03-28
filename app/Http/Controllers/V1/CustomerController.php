@@ -75,8 +75,7 @@ class CustomerController extends Controller
             'pic_name' => $validated['pic_name'],
             'phone' => $validated['phone'],
             'email' => $validated['email'],
-            'address' => $validated['address'],
-            'created_by' => $request->user()->id
+            'address' => $validated['address']
         ]);
 
         return ResponseFormatter::success(data: $customer);
@@ -123,7 +122,6 @@ class CustomerController extends Controller
             $customer->phone = $validated['phone'];
             $customer->email = $validated['email'];
             $customer->address = $validated['address'];
-            $customer->updated_by = $request->user()->id;
 
             $customer->save();
 

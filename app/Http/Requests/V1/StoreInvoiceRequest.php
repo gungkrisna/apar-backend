@@ -26,6 +26,9 @@ class StoreInvoiceRequest extends FormRequest
         'invoice_number' => 'required|unique:invoices',
         'date' => 'required',
         'customer_id' => 'required|exists:customers,id',
+        'discount' => 'numeric|min:0',
+        'tax' => 'numeric|min:0',
+        'description' => 'nullable',
 
         'invoice_items' => 'required|array|min:1',
         'invoice_items.*.category_id' => 'required|exists:categories,id',
@@ -52,6 +55,8 @@ class StoreInvoiceRequest extends FormRequest
             'date.required' => 'Tanggal pembelian harus diisi.',
             'customer_id.required' => 'Customer tidak valid.',
             'customer_id.exists' => 'Customer tidak ditemukan.',
+            'discount.numeric' => 'Nilai diskon harus berupa angka.',
+            'tax.numeric' => 'Nilai pajak harus berupa angka.',
 
             'invoice_items.*.category_id.required' => 'Kategori produk harus diisi.',
             'invoice_items.*.category_id.exists' => 'Kategori produk tidak ditemukan.',

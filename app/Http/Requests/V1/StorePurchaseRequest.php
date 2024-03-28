@@ -26,6 +26,9 @@ class StorePurchaseRequest extends FormRequest
         'purchase_number' => 'required|unique:purchases',
         'date' => 'required',
         'supplier_id' => 'required|exists:suppliers,id',
+        'discount' => 'numeric|min:0',
+        'tax' => 'numeric|min:0',
+        'description' => 'nullable',
 
         'purchase_items' => 'required|array|min:1',
         'purchase_items.*.category_id' => 'required|exists:categories,id',
@@ -52,6 +55,8 @@ class StorePurchaseRequest extends FormRequest
             'date.required' => 'Tanggal pembelian harus diisi.',
             'supplier_id.required' => 'Supplier tidak valid.',
             'supplier_id.exists' => 'Supplier tidak ditemukan.',
+            'discount.numeric' => 'Nilai diskon harus berupa angka.',
+            'tax.numeric' => 'Nilai pajak harus berupa angka.',
 
             'purchase_items.*.category_id.required' => 'Kategori produk harus diisi.',
             'purchase_items.*.category_id.exists' => 'Kategori produk tidak ditemukan.',

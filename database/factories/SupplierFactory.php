@@ -19,7 +19,6 @@ class SupplierFactory extends Factory
             'phone' =>fake()->unique()->phoneNumber(),
             'email' => fake()->unique()->companyEmail(),
             'address' => fake()->unique()->address(),
-            'created_by' => User::all()->random()->id
         ];
     }
 }

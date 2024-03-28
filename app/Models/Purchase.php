@@ -14,10 +14,30 @@ class Purchase extends Model
         'status',
         'purchase_number',
         'date',
-        'supplier_id',
-        'created_by',
-        'updated_by',
+        'discount',
+        'tax',
+        'description',
+        'supplier_id'
     ];
+
+    protected $appends = ['subtotal', 'total'];
+
+    public function getSubtotalAttribute()
+    {
+        $subtotal = 0;
+            foreach ($this->purchaseItems as $item) {
+                $subtotal += $item->getTotalPriceAttribute(); 
+            }
+        return $subtotal;
+    }
+
+    public function getTotalAttribute()
+    {
+        $discountedSubtotal = $this->getSubtotalAttribute() - $this->discount;
+        $tax =  $discountedSubtotal * ($this->tax / 100);
+
+        return $discountedSubtotal + $tax;
+    }
 
     public function images(): MorphMany
     {
@@ -32,15 +52,5 @@ class Purchase extends Model
     public function purchaseItems()
     {
         return $this->hasMany(PurchaseItem::class);
-    }
-
-    public function createdBy()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function updatedBy()
-    {
-        return $this->belongsTo(User::class);
     }
 }

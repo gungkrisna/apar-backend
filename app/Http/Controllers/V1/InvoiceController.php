@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Exports\V1\InvoiceItemsExport;
 use App\Exports\V1\InvoicesExport;
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
@@ -11,13 +12,14 @@ use App\Models\Image;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class InvoiceController extends Controller
 {
- /**
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
@@ -27,18 +29,22 @@ class InvoiceController extends Controller
         }
 
         try {
-            $validColumns = ['id', 'status', 'invoice_number', 'date', 'customer_id', 'created_by', 'updated_by', 'created_at', 'updated_at'];
-
             $filter = $request->query('filter');
-            $columns = $request->query('columns', $validColumns);
 
-            $columns = array_intersect($columns, $validColumns);
-            $query = Invoice::with('images', 'customer', 'invoiceItems', 'createdBy', 'updatedBy')
-                ->select($columns)
-                ->withSum('invoiceItems as total', 'total_price')
-                ->orderBy('created_at', 'desc');
+            $query = Invoice::with(['images', 'customer', 'invoiceItems'])->orderBy('created_at', 'desc');
 
-           if ($filter !== null && $filter !== '') {
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has(['from_date', 'to_date'])) {
+                $fromDate = $request->input('from_date', Carbon::now()->subYear()->startOfMonth());
+                $toDate = $request->input('to_date', Carbon::now()->endOfMonth());
+
+                $query->whereBetween('date', [$fromDate, $toDate]);
+            }
+
+            if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
                     $q->where('invoice_number', 'like', '%' . $filter . '%')
                         ->orWhereHas('invoiceItems', function ($q) use ($filter) {
@@ -52,34 +58,31 @@ class InvoiceController extends Controller
                         })
                         ->orWhereHas('customer', function ($q) use ($filter) {
                             $q->where('company_name', 'like', '%' . $filter . '%')
-                            ->orWhere('pic_name', 'like', '%' . $filter . '%')
-                            ->orWhere('phone', 'like', '%' . $filter . '%');
-                        });
-                        // ->orWhere('description', 'like', '%' . $filter . '%');
+                                ->orWhere('pic_name', 'like', '%' . $filter . '%')
+                                ->orWhere('phone', 'like', '%' . $filter . '%');
+                        })
+                        ->orWhere('description', 'like', '%' . $filter . '%');
                 });
-         }
+            }
 
 
-        if (!$request->has('pageIndex') && !$request->has('pageSize')) {
-            $data = $query->get();
-            $responseData = [
-                'rows' => $data,
-                'totalRowCount' => $query->count(),
-                'filteredRowCount' => $query->count(),
-                'pageCount' => 1,
-            ];
-        } else {
-            $pageIndex = $request->query('pageIndex', 1);
-            $pageSize = $request->query('pageSize', $query->count());
-            $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
+            if (!$request->has('pageIndex') && !$request->has('pageSize')) {
+                $responseData = $query->get();
+                if ($request->has('columns')) {
+                    $responseData = $responseData->select(explode(',', $request->columns));
+                }
+            } else {
+                $pageIndex = $request->query('pageIndex', 1);
+                $pageSize = $request->query('pageSize', $query->count());
+                $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
-            $responseData = [
-                'totalRowCount' => Invoice::count(),
-                'filteredRowCount' => $query->count(),
-                'pageCount' => $data->lastPage(),
-                'rows' => $data->items(),
-            ];
-        }
+                $responseData = [
+                    'totalRowCount' => Invoice::count(),
+                    'filteredRowCount' => $query->count(),
+                    'pageCount' => $data->lastPage(),
+                    'rows' => $data->items(),
+                ];
+            }
 
             return ResponseFormatter::success(data: $responseData);
         } catch (\Exception $e) {
@@ -98,8 +101,10 @@ class InvoiceController extends Controller
             'status' => 0,
             'invoice_number' => $validated['invoice_number'],
             'date' => $validated['date'],
-            'customer_id' => $validated['customer_id'],
-            'created_by' => auth()->id(),
+            'discount' => $validated['discount'] ?? 0,
+            'tax' => $validated['tax'] ?? 0,
+            'description' => $validated['description'] ?? null,
+            'customer_id' => $validated['customer_id']
         ]);
 
         foreach ($validated['invoice_items'] as $invoiceItemData) {
@@ -112,14 +117,8 @@ class InvoiceController extends Controller
             $invoiceItem->unit_price = $invoiceItemData['unit_price'];
             $invoiceItem->quantity = $invoiceItemData['quantity'];
             $invoiceItem->total_price = $invoiceItemData['unit_price'] * $invoiceItemData['quantity'];
-            $invoiceItem->created_by = auth()->id();
 
             $product = Product::find($invoiceItemData['product_id']);
-
-            if ($product && isset($product->expiry_period)) {
-                $expiryDate = date('Y-m-d', strtotime('+' . $product->expiry_period . ' months'));
-                $invoiceItem->expiry_date = $expiryDate;
-            } 
 
             $invoiceItem->save();
         }
@@ -147,9 +146,8 @@ class InvoiceController extends Controller
         }
 
         try {
-            $invoice = Invoice::with('images', 'customer', 'invoiceItems', 'invoiceItems.product', 'invoiceItems.category', 'createdBy', 'updatedBy')
-            ->withSum('invoiceItems as total', 'total_price')
-            ->find($id);
+            $invoice = Invoice::with('images', 'customer', 'invoiceItems', 'invoiceItems.product', 'invoiceItems.category')
+                ->find($id);
 
             if (!$invoice) {
                 return ResponseFormatter::error(404, 'Not Found');
@@ -174,10 +172,12 @@ class InvoiceController extends Controller
             'status' => 0,
             'invoice_number' => $validated['invoice_number'],
             'date' => $validated['date'],
-            'customer_id' => $validated['customer_id'],
-            'updated_by' => auth()->id(),
+            'discount' => $validated['discount'] ?? 0,
+            'tax' => $validated['tax'] ?? 0,
+            'description' => $validated['description'] ?? null,
+            'customer_id' => $validated['customer_id']
         ]);
-        
+
         $currentItemIds = $invoice->invoiceItems()->pluck('id')->toArray();
 
         foreach ($validated['invoice_items'] as $invoiceItemData) {
@@ -190,8 +190,7 @@ class InvoiceController extends Controller
                     'description' => $invoiceItemData['description'] ?? null,
                     'unit_price' => $invoiceItemData['unit_price'],
                     'quantity' => $invoiceItemData['quantity'],
-                    'total_price' => $invoiceItemData['unit_price'] * $invoiceItemData['quantity'],
-                    'updated_by' => auth()->id(),
+                    'total_price' => $invoiceItemData['unit_price'] * $invoiceItemData['quantity']
                 ]
             );
         }
@@ -202,27 +201,27 @@ class InvoiceController extends Controller
             InvoiceItem::whereIn('id', $itemsToDelete)->delete();
         }
 
-    if ($request->filled('images')) {
-        $images = $validated['images'];
+        if ($request->filled('images')) {
+            $images = $validated['images'];
 
-        $currImages = $invoice->images->pluck('id')->toArray();
-        $imagesToDelete = array_diff($currImages, $images);
+            $currImages = $invoice->images->pluck('id')->toArray();
+            $imagesToDelete = array_diff($currImages, $images);
 
-        foreach ($imagesToDelete as $imageId) {
-            $image = Image::find($imageId);
-            Storage::disk('public')->delete($image->path);
-            $image->delete();
+            foreach ($imagesToDelete as $imageId) {
+                $image = Image::find($imageId);
+                Storage::disk('public')->delete($image->path);
+                $image->delete();
+            }
+
+            foreach ($images as $imageId) {
+                $image = Image::find($imageId);
+                $image->collection_name = 'invoice_images';
+                $invoice->images()->save($image);
+            }
+        } else {
+            // empty images means delete all images if any
+            $invoice->images()->delete();
         }
-
-        foreach ($images as $imageId) {
-            $image = Image::find($imageId);
-            $image->collection_name = 'invoice_images';
-            $invoice->images()->save($image);
-        }
-    } else {
-        // empty images means delete all images if any
-        $invoice->images()->delete();
-    }
 
         return ResponseFormatter::success();
     }
@@ -238,7 +237,7 @@ class InvoiceController extends Controller
 
         $invoice = Invoice::findOrFail($invoice);
         $invoiceItems = $invoice->invoiceItems()->get();
-       
+
         foreach ($invoiceItems as $invoiceItem) {
             if ($invoiceItem->product->stock < $invoiceItem->quantity) {
                 return ResponseFormatter::error(422, 'Unprocessable Entity', 'Beberapa produk pada invoice tidak memiliki stock yang cukup.');
@@ -247,8 +246,16 @@ class InvoiceController extends Controller
 
         foreach ($invoiceItems as $invoiceItem) {
             $invoiceItem->product->decrement('stock', $invoiceItem->quantity);
+
+            $expiryPeriod = $invoiceItem->product->expiry_period;
+
+            if (isset($expiryPeriod)) {
+                $invoiceItem->expiry_date = now()->addMonth($expiryPeriod);
+            }
+
+            $invoiceItem->save();
         }
-        
+
         $invoice->update(['status' => 1]);
 
         return ResponseFormatter::success();
@@ -276,7 +283,6 @@ class InvoiceController extends Controller
 
             if ($lastOrderMonth == $month && $lastOrderYear == $year) {
                 $newOrderNumber = $prefix . $month . '/' . $year . '/' . (sprintf('%04d', $lastOrderNumberArray[4] + 1));
-
             }
         } else {
             $newOrderNumber = $prefix . $month . '/' . $year . '/0001';
@@ -296,7 +302,7 @@ class InvoiceController extends Controller
 
         try {
             $invoices = Invoice::whereIn('id', $request->id)->where('status', '!=', 1)->get();
-            
+
             if ($invoices->isEmpty()) {
                 return ResponseFormatter::error(400, 'Semua pembelian sudah disetujui.');
             } else {
@@ -320,19 +326,31 @@ class InvoiceController extends Controller
             return ResponseFormatter::error('401', 'Unauthorized');
         };
         $productIds = $request->input('id', []);
-        $customerId = $request->input('customer', null);
+        $customerId = $request->input('customerId', null);
         $status = $request->input('status', null);
         $startDate = $request->input('startDate', null);
         $endDate = $request->input('endDate', null);
+        $isGrouped = $request->input('isGrouped', 1);
         $fileType = $request->input('fileType');
 
-        switch ($fileType) {
-            case 'CSV':
-                return Excel::raw(new InvoicesExport($productIds, $customerId, $status, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
-                break;
-            case 'XLSX':
-                return Excel::raw(new InvoicesExport($productIds, $customerId, $status, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
-                break;
+        if ($isGrouped) {
+            switch ($fileType) {
+                case 'CSV':
+                    return Excel::raw(new InvoicesExport($productIds, $customerId, $status, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                    break;
+                case 'XLSX':
+                    return Excel::raw(new InvoicesExport($productIds, $customerId, $status, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                    break;
+            };
+        } else {
+            switch ($fileType) {
+                case 'CSV':
+                    return Excel::raw(new InvoiceItemsExport($productIds, $customerId, $status, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                    break;
+                case 'XLSX':
+                    return Excel::raw(new InvoiceItemsExport($productIds, $customerId, $status, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                    break;
+            };
         };
     }
 }

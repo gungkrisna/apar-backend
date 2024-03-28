@@ -72,8 +72,7 @@ class SupplierController extends Controller
             'name' => $validated['name'],
             'phone' => $validated['phone'],
             'email' => $validated['email'],
-            'address' => $validated['address'],
-            'created_by' => $request->user()->id
+            'address' => $validated['address']
         ]);
 
         return ResponseFormatter::success(data: $supplier);
@@ -119,7 +118,6 @@ class SupplierController extends Controller
             $supplier->phone = $validated['phone'];
             $supplier->email = $validated['email'];
             $supplier->address = $validated['address'];
-            $supplier->updated_by = $request->user()->id;
 
             $supplier->save();
 

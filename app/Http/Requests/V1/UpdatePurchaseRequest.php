@@ -17,10 +17,6 @@ class UpdatePurchaseRequest extends FormRequest
         if ($purchase->status !== 1 && $this->user()->can('update purchases')) {
             return true;
         }
-
-        // if ($this->user()->role === 'Staff' && $purchase->createdBy->id !== $this->user()->id) {
-        //     return false;
-        // }
             
         return false;
     }
@@ -36,6 +32,9 @@ class UpdatePurchaseRequest extends FormRequest
         'purchase_number' => 'required',
         'date' => 'required',
         'supplier_id' => 'required|exists:suppliers,id',
+        'discount' => 'numeric|min:0',
+        'tax' => 'numeric|min:0',
+        'description' => 'nullable',
 
         'purchase_items' => 'required|array|min:1',
         'purchase_items.*.id' => 'sometimes|nullable|exists:purchase_items,id',
@@ -62,6 +61,8 @@ class UpdatePurchaseRequest extends FormRequest
             'date.required' => 'Tanggal pembelian harus diisi.',
             'supplier_id.required' => 'Supplier tidak valid.',
             'supplier_id.exists' => 'Supplier tidak ditemukan.',
+            'discount.numeric' => 'Nilai diskon harus berupa angka.',
+            'tax.numeric' => 'Nilai pajak harus berupa angka.',
 
             'purchase_items.*.id.exists' => 'ID produk tidak valid.',
             'purchase_items.*.category_id.required' => 'Kategori produk harus diisi.',

@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Mail\InvoiceItemExpiryNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Mail;
 
 class InvoiceItem extends Model
 {
@@ -16,11 +18,23 @@ class InvoiceItem extends Model
         'description',
         'quantity',
         'unit_price',
-        'total_price',
         'expiry_date',
-        'created_by',
-        'updated_by',
     ];
+
+    protected $appends = ['total_price'];
+    protected $casts = [
+        'expiry_date' => 'datetime',
+    ];
+
+    public function sendExpiryNotification()
+    {
+        $daysUntilExpiry = now()->diffInDays($this->expiry_date);
+
+        if ($daysUntilExpiry == 30) {
+            $customer = $this->invoice->customer;
+            Mail::to($customer->email)->send(new InvoiceItemExpiryNotification($this));
+        }
+    }
 
     public function getUnitPriceAttribute($value)
     {
@@ -32,9 +46,9 @@ class InvoiceItem extends Model
         return $this->num($value);
     }
 
-    public function getTotalPriceAttribute($value)
+    public function getTotalPriceAttribute()
     {
-        return $this->num($value);
+        return $this->num($this->quantity * $this->unit_price);
     }
 
     public function num($num)
@@ -55,15 +69,5 @@ class InvoiceItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
-    }
-
-    public function createdBy()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function updatedBy()
-    {
-        return $this->belongsTo(User::class, 'updated_by');
     }
 }

@@ -44,29 +44,34 @@ class InvoicesExport implements FromCollection, WithHeadings, WithColumnFormatti
             $query->whereIn('id', $this->invoiceIds);
         }
 
+        if (isset($this->status)) {
+            $query->where('status', $this->status);
+        }
+
         if (!empty($this->customerId)) {
-            $query->whereIn('customer_id', $this->customerId);
+            $query->where('customer_id', $this->customerId);
         }
 
         if (!empty($this->startDate)) {
-            $query->where('created_at', '>=', $this->startDate);
+            $query->where('date', '>=', $this->startDate);
         }
 
         if (!empty($this->endDate)) {
-            $query->where('created_at', '<=', $this->endDate);
+            $query->where('date', '<=', $this->endDate);
         }
 
         // Transform the results into an array format matching the headings
         $data = $query->get()->map(function ($item) {
             return [
                 $item->id,
+                $item->date,
                 $item->status == 1 ? 'Disetujui' : 'Pending',
                 $item->invoice_number,
                 $item->customer->company_name,
                 $item->invoiceItems->sum('total_price'),
                 $item->customer->pic_name,
-                $item->customer->phone,
                 $item->customer->email,
+                $item->customer->phone,
                 $item->customer->address,
                 $item->created_at,
                 $item->updated_at,
@@ -83,14 +88,15 @@ class InvoicesExport implements FromCollection, WithHeadings, WithColumnFormatti
     {
         return [
             'ID',
+            'Tanggal',
             'Status',
             'No. Invoice',
             'Nama Perusahaan',
             'Total',
             'Person in Contact',
-            'Email',
-            'Telepon',
-            'Alamat',
+            'Email Perusahaan',
+            'Telepon Perusahaan',
+            'Alamat Perusahaan',
             'Tanggal Dibuat',
             'Terakhir Diperbarui',
         ];

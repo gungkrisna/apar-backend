@@ -5,6 +5,7 @@ namespace App\Http\Controllers\V1;
 use App\Helpers\V1\ResponseFormatter;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\StoreProfilePhotoRequest;
+use App\Models\Image;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
@@ -17,14 +18,17 @@ class ProfilePhotoController extends Controller
     {
         $user = User::find(auth()->id());
 
-        $photoPath = $request->file('photo')->store('photos', 'public');
+        $path = $request->file('photo')->store('photos', 'public');
 
         if ($user->photo) {
-            Storage::disk('public')->delete($user->photo);
+            $user->photo->delete();
+            Storage::disk('public')->delete($user->photo->path);
         }
 
-        $user->photo = $photoPath;
-        $user->save();
+        $image = Image::create(['path' => $path]);
+        $image->collection_name = 'profile_photo';
+
+        $user->photo()->save($image);
 
         return ResponseFormatter::success(data: [
             'photo_url' => Storage::url($user->photo),
@@ -41,10 +45,9 @@ class ProfilePhotoController extends Controller
             return ResponseFormatter::error('404', 'Not Found');
         }
 
-        Storage::delete($user->photo);
+        Storage::disk('public')->delete($user->photo->path);
 
-        $user->photo = null;
-        $user->save();
+        $user->photo->delete();
 
         return ResponseFormatter::success();
     }

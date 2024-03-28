@@ -17,8 +17,6 @@ class Supplier extends Model
         'phone',
         'email',
         'address',
-        'created_by',
-        'updated_by',
     ];
 
     // public function prunable() {
@@ -33,16 +31,6 @@ class Supplier extends Model
     public function purchases()
     {
         return $this->hasMany(Purchase::class);
-    }
-
-    public function createdBy()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function updatedBy()
-    {
-        return $this->belongsTo(User::class, 'updated_by');
     }
 }
 

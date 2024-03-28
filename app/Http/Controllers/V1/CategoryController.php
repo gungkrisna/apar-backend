@@ -72,8 +72,7 @@ class CategoryController extends Controller
 
         $category = Category::create([
             'name' => $validated['name'],
-            'description' => $validated['description'],
-            'created_by' => auth()->id()
+            'description' => $validated['description']
         ]);
 
         if ($request->has('image')) {
@@ -131,8 +130,7 @@ class CategoryController extends Controller
 
         $category->update([
             'name' => $validated['name'],
-            'description' => $validated['description'],
-            'updated_by' => auth()->id()
+            'description' => $validated['description']
         ]);
 
         if ($request->has('image')) {

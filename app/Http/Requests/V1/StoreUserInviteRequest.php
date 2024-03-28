@@ -35,8 +35,8 @@ class StoreUserInviteRequest extends FormRequest
     public function messages()
     {
         return [
-            'email.unique_users' => 'Alamat email :attribute sudah terdaftar.',
-            'email.unique_invitations' => 'Alamat email :attribute sudah diundang.'
+            'email.unique_users' => 'Alamat email ' . $this->input('email') . ' sudah terdaftar.',
+            'email.unique_invitations' => 'Alamat email ' . $this->input('email') . ' sudah diundang.'
         ];
     }
 }

@@ -18,14 +18,16 @@ class ProductsExport implements FromCollection, WithHeadings, WithColumnFormatti
     use Exportable;
 
     protected $productIds;
+    protected $status;
     protected $supplierId;
     protected $categoryId;
     protected $startDate;
     protected $endDate;
 
-    public function __construct(array $productIds = [], $supplierId = null, $categoryId = null, $startDate = null, $endDate = null)
+    public function __construct(array $productIds = [], $status = null, $supplierId = null, $categoryId = null, $startDate = null, $endDate = null)
     {
         $this->productIds = $productIds;
+        $this->status = $status;
         $this->supplierId = $supplierId;
         $this->categoryId = $categoryId;
         $this->startDate = $startDate;
@@ -44,12 +46,16 @@ class ProductsExport implements FromCollection, WithHeadings, WithColumnFormatti
             $query->whereIn('id', $this->productIds);
         }
 
+        if (isset($this->status)) {
+            $query->where('status', $this->status);
+        }
+
         if (!empty($this->supplierId)) {
             $query->where('supplier_id', $this->supplierId);
         }
 
         if (!empty($this->categoryId)) {
-            $query->whereIn('category_id', $this->categoryId);
+            $query->where('category_id', $this->categoryId);
         }
 
         if (!empty($this->startDate)) {
@@ -64,16 +70,16 @@ class ProductsExport implements FromCollection, WithHeadings, WithColumnFormatti
         $data = $query->get()->map(function ($item) {
             return [
                 $item->id,
-                $item->status,
+                $item->status == 1 ? 'Aktif' : 'Nonaktif',
                 $item->serial_number,
                 $item->name,
                 $item->description,
                 $item->stock,
                 $item->price,
                 $item->expiry_period,
-                $item->unit->name, // Access the eager loaded relation's name
-                $item->supplier->name, // Access the eager loaded relation's name
-                $item->category->name, // Access the eager loaded relation's name
+                $item->unit->name,
+                $item->supplier->name, 
+                $item->category->name, 
                 $item->created_at,
                 $item->updated_at,
             ];

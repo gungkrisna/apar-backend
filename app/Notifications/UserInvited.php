@@ -39,12 +39,11 @@ class UserInvited extends Notification
         $frontendUrl = env('FRONTEND_URL');
 
         return (new MailMessage)
-            ->subject('Personal Invitation')
-            ->greeting('Hello!')
-            ->line("You have been invited by {$this->sender->name} to join the {$appName} Inventory Management System!")
-            ->action('Click here to register your account', $frontendUrl . '/register?invite=' . $this->invitation->invite_token)
-            ->line('Note: this link will expires after 24 hours.');
-        
+            ->subject('Undangan Pribadi')
+            ->greeting('Halo!')
+            ->line("Anda telah diundang oleh {$this->sender->name} untuk bergabung ke Sistem Manajemen Inventaris {$appName}!")
+            ->action('Klik di sini untuk mendaftar akun Anda', $frontendUrl . '/register?invite=' . $this->invitation->invite_token)
+            ->line('Catatan: tautan ini akan kedaluwarsa setelah 24 jam.');
     }
 
     /**
