@@ -42,7 +42,7 @@ class UserInvited extends Notification
             ->subject('Undangan Pribadi')
             ->greeting('Halo!')
             ->line("Anda telah diundang oleh {$this->sender->name} untuk bergabung ke Sistem Manajemen Inventaris {$appName}!")
-            ->action('Klik di sini untuk mendaftar akun Anda', $frontendUrl . '/register?invite=' . $this->invitation->invite_token)
+            ->action('Klik di sini untuk mendaftar akun Anda', $frontendUrl . '/dashboard/register?invite=' . $this->invitation->invite_token)
             ->line('Catatan: tautan ini akan kedaluwarsa setelah 24 jam.');
     }
 
