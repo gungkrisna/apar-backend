@@ -3,6 +3,7 @@
 namespace App\Http\Requests\V1;
 
 use App\Models\User;
+use App\Rules\UniqueInvitationEmail;
 use App\Rules\ValidRole;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -24,7 +25,7 @@ class StoreUserInviteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email', 'max:255', 'unique_users', 'unique_invitations'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique_users', new UniqueInvitationEmail],
             'role' => ['required', new ValidRole]
         ];
     }
