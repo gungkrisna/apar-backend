@@ -31,6 +31,7 @@ class ProductController extends Controller
                 $query->with('supplier');
             } else {
                 $query->without('supplier');
+                $query->where('status', '!=', 0);
             }
 
             // Apply sorting
@@ -163,6 +164,9 @@ class ProductController extends Controller
             if ($request->user() && $request->user()->can('access products')) {
                 $product->load('supplier');
             } else {
+                if ($product->status == 0) {
+                    return ResponseFormatter::error(404, 'Product not found');
+                }
                 unset($product->supplier_id);
             }
 
