@@ -14,7 +14,7 @@ class CategoryTrashController extends Controller
     /**
      * Display a listing of the resource.
      */
-     public function index(Request $request)
+    public function index(Request $request)
     {
         if ($request->user()->cannot('force delete categories')) {
             return ResponseFormatter::error('401', 'Unauthorized');
@@ -22,18 +22,30 @@ class CategoryTrashController extends Controller
 
         try {
             $filter = $request->query('filter');
+            $columns = $request->query('columns');
+            $selectColumns = $columns ? explode(',', $columns) : ['*'];
 
-            $query = Category::with(['image', 'features'])
-                ->onlyTrashed()->orderBy('created_at', 'desc');
+            $query = Category::query();
 
-            if ($request->has('columns')) {
-                $query = $query->select(explode(',', $request->columns));
+            // Eager-load relationships and remove them from select columns
+            if (in_array('image', $selectColumns)) {
+                $query->with('image');
+                $selectColumns = array_diff($selectColumns, ['image']);
+            }
+
+            if (in_array('features', $selectColumns)) {
+                $query->with('features');
+                $selectColumns = array_diff($selectColumns, ['features']);
+            }
+            $query->onlyTrashed()->orderBy('created_at', 'desc');
+
+            if ($columns) {
+                $query->select($selectColumns);
             }
 
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%')
-                        ->orWhere('description', 'like', '%' . $filter . '%');
+                    $q->where('name', 'like', '%' . $filter . '%');
                 });
             }
 
@@ -119,7 +131,7 @@ class CategoryTrashController extends Controller
                 }
                 $category->forceDelete();
             }
-            
+
             return ResponseFormatter::success();
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());

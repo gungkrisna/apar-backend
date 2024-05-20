@@ -46,8 +46,7 @@ class CategoryController extends Controller
 
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%')
-                        ->orWhere('description', 'like', '%' . $filter . '%');
+                    $q->where('name', 'like', '%' . $filter . '%');
                 });
             }
 

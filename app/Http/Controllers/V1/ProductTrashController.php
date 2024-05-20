@@ -46,7 +46,6 @@ class ProductTrashController extends Controller
                 $query->where(function ($q) use ($filter) {
                     $q->where('name', 'like', '%' . $filter . '%')
                         ->orWhere('serial_number', 'like', '%' . $filter . '%')
-                        ->orWhere('description', 'like', '%' . $filter . '%')
                         ->orWhereHas('supplier', function ($q) use ($filter) {
                             $q->where('name', 'like', '%' . $filter . '%');
                         })

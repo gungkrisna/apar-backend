@@ -23,7 +23,7 @@ class StorePurchaseImageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'images.*' => 'required|image|mimes:jpeg,png|max:10000',
+            'images.*' => 'required|image',
         ];
     }
 
@@ -36,9 +36,7 @@ class StorePurchaseImageRequest extends FormRequest
     {
         return [
             'images.*.required' => 'Pilih file gambar yang akan diunggah.',
-            'images.*.image' => 'File yang diunggah harus berupa gambar.',
-            'images.*.mimes' => 'Ekstensi file yang diperbolehkan: .JPG, .JPEG, .PNG.',
-            'images.*.max' => 'Besar file: maksimum 10.000.000 bytes (10 Megabytes).',
+            'images.*.image' => 'File yang diunggah harus berupa gambar.'
         ];
     }
 }

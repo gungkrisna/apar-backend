@@ -41,20 +41,6 @@ use App\Http\Resources\UserResource;
 |c
 */
 
-Route::prefix('categories')->as('categories.')->group(function () {
-    Route::controller(CategoryController::class)->group(function () {
-        Route::get('/{category}', 'show')->name('show');
-        Route::get('/', 'index')->name('index');
-    });
-});
-
-Route::prefix('products')->as('products.')->group(function () {
-    Route::controller(ProductController::class)->group(function () {
-        Route::get('/{product}', 'show')->name('show');
-        Route::get('/', 'index')->name('index');
-    });
-});
-
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', function (Request $request) {
         return new UserResource($request->user());
@@ -231,3 +217,16 @@ Route::middleware(['guest'])->group(function () {
     Route::get('/users/invite/{token}', [UserInviteController::class, 'show'])->name('user.invite.show');
 });
 
+Route::prefix('categories')->as('categories.')->group(function () {
+    Route::controller(CategoryController::class)->group(function () {
+        Route::get('/{category}', 'show')->name('show');
+        Route::get('/', 'index')->name('index');
+    });
+});
+
+Route::prefix('products')->as('products.')->group(function () {
+    Route::controller(ProductController::class)->group(function () {
+        Route::get('/{product}', 'show')->name('show');
+        Route::get('/', 'index')->name('index');
+    });
+});

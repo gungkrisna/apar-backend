@@ -23,7 +23,7 @@ class StoreCategoryImageRequest extends FormRequest
     public function rules()
     {
         return [
-            'image' => 'required|image|mimes:jpg,jpeg,png|max:10000',
+            'image' => 'required|image',
         ];
     }
 
@@ -37,8 +37,6 @@ class StoreCategoryImageRequest extends FormRequest
         return [
             'photo.required' => 'Pilih file gambar yang akan diunggah.',
             'photo.image' => 'File yang diunggah harus berupa gambar.',
-            'photo.mimes' => 'Ekstensi file yang diperbolehkan: .JPG, .JPEG, .PNG.',
-            'photo.max' => 'Besar file: maksimum 10.000.000 bytes (10 Megabytes).',
         ];
     }
 }

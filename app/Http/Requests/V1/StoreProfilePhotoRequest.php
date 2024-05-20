@@ -24,7 +24,7 @@ class StoreProfilePhotoRequest extends FormRequest
     public function rules()
     {
         return [
-            'photo' => 'required|image|mimes:jpeg,png|max:10000',
+            'photo' => 'required|image',
         ];
     }
 
@@ -37,9 +37,7 @@ class StoreProfilePhotoRequest extends FormRequest
     {
         return [
             'photo.required' => 'Pilih file untuk foto profil Anda.',
-            'photo.image' => 'File yang diunggah harus berupa gambar.',
-            'photo.mimes' => 'Ekstensi file yang diperbolehkan: .JPG, .JPEG, .PNG.',
-            'photo.max' => 'Besar file: maksimum 10.000.000 bytes (10 Megabytes).',
+            'photo.image' => 'File yang diunggah harus berupa gambar.'
         ];
     }
 }

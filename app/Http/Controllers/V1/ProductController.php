@@ -68,8 +68,7 @@ class ProductController extends Controller
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter, $request) {
                     $q->where('name', 'like', '%' . $filter . '%')
-                        ->orWhere('serial_number', 'like', '%' . $filter . '%')
-                        ->orWhere('description', 'like', '%' . $filter . '%');
+                        ->orWhere('serial_number', 'like', '%' . $filter . '%');
 
                     $user = $request->user();
                     if ($user && $user->can('access products')) {
