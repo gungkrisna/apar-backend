@@ -230,3 +230,4 @@ Route::middleware(['guest'])->group(function () {
     Route::get('/register', [RegistrationController::class, 'check'])->name('registration.check');
     Route::get('/users/invite/{token}', [UserInviteController::class, 'show'])->name('user.invite.show');
 });
+
