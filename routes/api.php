@@ -41,6 +41,20 @@ use App\Http\Resources\UserResource;
 |c
 */
 
+Route::prefix('categories')->as('categories.')->group(function () {
+    Route::controller(CategoryController::class)->group(function () {
+        Route::get('/{category}', 'show')->name('show');
+        Route::get('/', 'index')->name('index');
+    });
+});
+
+Route::prefix('products')->as('products.')->group(function () {
+    Route::controller(ProductController::class)->group(function () {
+        Route::get('/{product}', 'show')->name('show');
+        Route::get('/', 'index')->name('index');
+    });
+});
+
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/user', function (Request $request) {
         return new UserResource($request->user());
@@ -54,8 +68,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::prefix('profile')->as('profile.')->group(function () {
         Route::controller(ProfilePhotoController::class)->group(function () {
-            Route::post('/photo', 'store')->name('store');
-            Route::delete('/photo', 'destroy')->name('destroy');
+            Route::post('/photo', 'store')->name('photo.store');
+            Route::delete('/photo', 'destroy')->name('photo.destroy');
         });
         Route::controller(ProfileController::class)->group(function () {
             Route::put('/', 'update')->name('update');
@@ -66,7 +80,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('users')->as('users.')->group(function () {
         Route::controller(UserController::class)->group(function () {
             Route::get('/', 'index')->name('index');
-            Route::delete('/', 'destroy')->name('destroy');
+            Route::delete('', 'destroy')->name('destroy');
             Route::put('/{user}/role', 'updateRole')->name('update.role');
         });
 
@@ -111,8 +125,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::prefix('categories')->as('categories.')->group(function () {
         Route::controller(CategoryImageController::class)->group(function () {
-            Route::post('/image', 'store')->name('store');
-            Route::delete('/image/{id}', 'destroy')->name('destroy');
+            Route::post('/image', 'store')->name('image.store');
+            Route::delete('/image/{id}', 'destroy')->name('image.destroy');
         });
         Route::controller(CategoryTrashController::class)->group(function () {
             Route::get('/trash', 'index')->name('trash.index');
@@ -124,8 +138,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::controller(CategoryController::class)->group(function () {
             Route::post('/', 'store')->name('store');
             Route::get('/export', 'export')->name('export');
-            Route::get('/{category}', 'show')->name('show');
-            Route::get('/', 'index')->name('index');
             Route::put('/{category}', 'update')->name('update');
             Route::delete('/', 'destroy')->name('destroy');
         });
@@ -151,8 +163,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::prefix('products')->as('products.')->group(function () {
         Route::controller(ProductImageController::class)->group(function () {
-            Route::post('/image', 'store')->name('store');
-            Route::delete('/image/{id}', 'destroy')->name('destroy');
+            Route::post('/image', 'store')->name('image.store');
+            Route::delete('/image/{id}', 'destroy')->name('image.destroy');
         });
         Route::controller(ProductTrashController::class)->group(function () {
             Route::get('/trash', 'index')->name('trash.index');
@@ -167,8 +179,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/serial-number/{serialNumber}', 'getBySerialNumber')->name('getBySerialNumber');
             Route::post('/', 'store')->name('store');
             Route::get('/export', 'export')->name('export');
-            Route::get('/{product}', 'show')->name('show');
-            Route::get('/', 'index')->name('index');
             Route::put('/{product}', 'update')->name('update');
             Route::delete('/', 'destroy')->name('destroy');
         });
@@ -176,8 +186,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::prefix('purchases')->as('purchases.')->group(function () {
         Route::controller(PurchaseImageController::class)->group(function () {
-            Route::post('/image', 'store')->name('store');
-            Route::delete('/image/{id}', 'destroy')->name('destroy');
+            Route::post('/image', 'store')->name('image.store');
+            Route::delete('/image/{id}', 'destroy')->name('image.destroy');
         });
 
         Route::controller(PurchaseController::class)->group(function () {
@@ -194,8 +204,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::prefix('invoices')->as('invoices.')->group(function () {
         Route::controller(InvoiceImageController::class)->group(function () {
-            Route::post('/image', 'store')->name('store');
-            Route::delete('/image/{id}', 'destroy')->name('destroy');
+            Route::post('/image', 'store')->name('image.store');
+            Route::delete('/image/{id}', 'destroy')->name('image.destroy');
         });
 
         Route::controller(InvoiceController::class)->group(function () {
@@ -215,7 +225,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
     Route::get('/user-roles', [UserRoleController::class, 'index'])->name('user-role.index');
 });
-
 
 Route::middleware(['guest'])->group(function () {
     Route::get('/register', [RegistrationController::class, 'check'])->name('registration.check');

@@ -10,12 +10,8 @@ use App\Http\Requests\V1\UpdateProductRequest;
 use App\Models\Image;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
-use Picqer\Barcode\BarcodeGeneratorJPG;
-use Picqer\Barcode\BarcodeGeneratorPNG;
-use Picqer\Barcode\BarcodeGeneratorSVG;
 
 class ProductController extends Controller
 {
@@ -24,66 +20,62 @@ class ProductController extends Controller
      */
     public function index(Request $request)
     {
-        if ($request->user()->cannot('access products')) {
-        return ResponseFormatter::error('401', 'Unauthorized');
-    }
+        try {
+            $filter = $request->query('filter');
 
-    try {
-        $filter = $request->query('filter');
+            $query = Product::with(['images', 'unit', 'supplier', 'category'])
+                ->withoutTrashed()->orderBy('created_at', 'desc');
 
-        $query = Product::with(['images', 'unit', 'supplier', 'category'])
-            ->withoutTrashed()->orderBy('created_at', 'desc');
+            if ($request->has('columns')) {
+                $query = $query->select(explode(',', $request->columns));
+            }
 
-        if ($request->has('columns')) {
-            $query = $query->select(explode(',', $request->columns));
-        }
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
+            if ($request->has('supplier_id')) {
+                $query->where('supplier_id', $request->supplier_id);
+            }
 
-        if ($request->has('supplier_id')) {
-            $query->where('supplier_id', $request->supplier_id);
-        }
+            if ($request->has('category_id')) {
+                $query->where('category_id', $request->category_id);
+            }
 
-        if ($request->has('category_id')) {
-            $query->where('category_id', $request->category_id);
-        }
-
-        if ($filter !== null && $filter !== '') {
-            $query->where(function ($q) use ($filter) {
-                $q->where('name', 'like', '%' . $filter . '%')
-                ->orWhere('serial_number', 'like', '%' . $filter . '%')
-                ->orWhere('description', 'like', '%' . $filter . '%')
-                ->orWhereHas('supplier', function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%');
-                })
-                ->orWhereHas('category', function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%');
-                })
-                ->orWhereHas('unit', function ($q) use ($filter) {
-                    $q->where('name', 'like', '%' . $filter . '%');
+            if ($filter !== null && $filter !== '') {
+                $query->where(function ($q) use ($filter) {
+                    $q->where('name', 'like', '%' . $filter . '%')
+                        ->orWhere('serial_number', 'like', '%' . $filter . '%')
+                        ->orWhere('description', 'like', '%' . $filter . '%')
+                        ->orWhereHas('supplier', function ($q) use ($filter) {
+                            $q->where('name', 'like', '%' . $filter . '%');
+                        })
+                        ->orWhereHas('category', function ($q) use ($filter) {
+                            $q->where('name', 'like', '%' . $filter . '%');
+                        })
+                        ->orWhereHas('unit', function ($q) use ($filter) {
+                            $q->where('name', 'like', '%' . $filter . '%');
+                        });
                 });
-            });
-        }
+            }
 
-        if (!$request->has('pageIndex') && !$request->has('pageSize')) {
-            $responseData = $query->get();
-        } else {
-            $pageIndex = $request->query('pageIndex', 1);
-            $pageSize = $request->query('pageSize', $query->count());
-            $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
+            if (!$request->has('pageIndex') && !$request->has('pageSize')) {
+                $responseData = $query->get();
+            } else {
+                $pageIndex = $request->query('pageIndex', 1);
+                $pageSize = $request->query('pageSize', $query->count());
+                $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
-            $responseData = [
-                'totalRowCount' => Product::withoutTrashed()->count(),
-                'filteredRowCount' => $query->count(),
-                'pageCount' => $data->lastPage(),
-                'rows' => $data->items(),
-            ];
-        }
+                $responseData = [
+                    'totalRowCount' => Product::withoutTrashed()->count(),
+                    'filteredRowCount' => $query->count(),
+                    'pageCount' => $data->lastPage(),
+                    'rows' => $data->items(),
+                ];
+            }
 
-        return ResponseFormatter::success(data: $responseData);
-    } catch (\Exception $e) {
+            return ResponseFormatter::success(data: $responseData);
+        } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
     }
@@ -105,12 +97,9 @@ class ProductController extends Controller
             'price' => $validated['price'],
             'unit_id' => $validated['unit_id'],
             'supplier_id' => $validated['supplier_id'],
-            'category_id' => $validated['category_id']
+            'category_id' => $validated['category_id'],
+            'expiry_period' => $request->has('expiry_period') ? $validated['expiry_period'] : null
         ]);
-
-        if ($request->has('expiry_period')) {
-            $product->expiry_period($validated['expiry_period']);
-        }
 
         if ($request->filled('images')) {
             $images = $validated['images'];
@@ -129,12 +118,8 @@ class ProductController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $request, string $id)
+    public function show(string $id)
     {
-        if ($request->user()->cannot('access products')) {
-            return ResponseFormatter::error('401', 'Unauthorized');
-        }
-
         try {
             $product = Product::with('images', 'supplier', 'category')->find($id);
 
@@ -226,7 +211,7 @@ class ProductController extends Controller
         if ($request->user()->cannot('update products')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         }
-        
+
         $validated = $request->validate([
             'product_ids' => 'required|array',
             'active' => 'required|boolean',
@@ -245,25 +230,25 @@ class ProductController extends Controller
      */
     public function generateSerialNumber(Request $request)
     {
-    if ($request->user()->cannot('create products')) {
-        return ResponseFormatter::error('401', 'Unauthorized');
-    }
+        if ($request->user()->cannot('create products')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        }
 
-    $prefix = '200';
-    $randomNumber = mt_rand(100000000, 999999999); // 9-digit random number
+        $prefix = '200';
+        $randomNumber = mt_rand(100000000, 999999999); // 9-digit random number
 
-    // Calculate the check digit
-    $checkDigit = $this->calculateEanCheckDigit($prefix . $randomNumber);
+        // Calculate the check digit
+        $checkDigit = $this->calculateEanCheckDigit($prefix . $randomNumber);
 
-    $eanCode = $prefix . $randomNumber . $checkDigit;
-
-    while (Product::where('serial_number', $eanCode)->exists()) {
-        $randomNumber = mt_rand(100000000, 999999999);
         $eanCode = $prefix . $randomNumber . $checkDigit;
-    }
 
-    return ResponseFormatter::success(data: $eanCode);
-}
+        while (Product::where('serial_number', $eanCode)->exists()) {
+            $randomNumber = mt_rand(100000000, 999999999);
+            $eanCode = $prefix . $randomNumber . $checkDigit;
+        }
+
+        return ResponseFormatter::success(data: $eanCode);
+    }
 
     private function calculateEanCheckDigit($eanWithoutCheckDigit)
     {
@@ -272,10 +257,10 @@ class ProductController extends Controller
 
         for ($i = strlen($eanWithoutCheckDigit) - 1; $i >= 0; $i--) {
             $sum += $weight * intval($eanWithoutCheckDigit[$i]);
-            $weight = 4 - $weight; 
+            $weight = 4 - $weight;
         }
 
-        $checkDigit = (10 - ($sum % 10)) % 10; 
+        $checkDigit = (10 - ($sum % 10)) % 10;
 
         return $checkDigit;
     }
@@ -291,7 +276,7 @@ class ProductController extends Controller
 
         try {
             $products = Product::withoutTrashed()->whereIn('id', $request->id);
-            
+
             foreach ($products->get() as $product) {
                 $invoices = $product->invoiceItems()->get();
                 $purchases = $product->purchaseItems()->get();

@@ -31,7 +31,7 @@ class PurchaseImageController extends Controller
     public function destroy($id)
     {
         $image = Image::findOrFail($id);
-        if($image->collection_name === 'purchase_images'){
+        if ($image->collection_name === 'purchase_images') {
             Storage::disk('public')->delete($image->path);
             $image->delete();
         }

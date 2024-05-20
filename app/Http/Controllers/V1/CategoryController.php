@@ -21,18 +21,26 @@ class CategoryController extends Controller
      */
     public function index(Request $request)
     {
-        if ($request->user()->cannot('access categories')) {
-            return ResponseFormatter::error('401', 'Unauthorized');
-        };
-
         try {
             $filter = $request->query('filter');
+            $columns = $request->query('columns');
+            $selectColumns = $columns ? explode(',', $columns) : ['*'];
 
-            $query = Category::with(['image', 'features'])
-                ->withoutTrashed()->orderBy('created_at', 'desc');
+            $query = Category::query();
 
-            if ($request->has('columns')) {
-                $query = $query->select(explode(',', $request->columns));
+            // Eager-load
+            if (in_array('image', $selectColumns)) {
+                $query->with('image');
+            }
+
+            if (in_array('features', $selectColumns)) {
+                $query->with('features');
+            }
+
+            $query->withoutTrashed()->orderBy('created_at', 'desc');
+
+            if ($columns) {
+                $query->select($selectColumns);
             }
 
             if ($filter !== null && $filter !== '') {
@@ -102,10 +110,6 @@ class CategoryController extends Controller
      */
     public function show(Request $request, string $id)
     {
-        if ($request->user()->cannot('access categories')) {
-            return ResponseFormatter::error('401', 'Unauthorized');
-        };
-
         try {
             $category = Category::with('image', 'features')->find($id);
 
@@ -174,7 +178,7 @@ class CategoryController extends Controller
 
         try {
             $categories = Category::withoutTrashed()->whereIn('id', $request->id);
-            
+
             foreach ($categories->get() as $category) {
                 $products = $category->products()->get();
 
@@ -183,7 +187,7 @@ class CategoryController extends Controller
                 }
             };
 
-            $products->delete();
+            $categories->delete();
             return ResponseFormatter::success();
         } catch (\Exception $e) {
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
