@@ -28,15 +28,16 @@ class CategoryController extends Controller
 
             $query = Category::query();
 
-            // Eager-load
+            // Eager-load relationships and remove them from select columns
             if (in_array('image', $selectColumns)) {
                 $query->with('image');
+                $selectColumns = array_diff($selectColumns, ['image']);
             }
 
             if (in_array('features', $selectColumns)) {
                 $query->with('features');
+                $selectColumns = array_diff($selectColumns, ['features']);
             }
-
             $query->withoutTrashed()->orderBy('created_at', 'desc');
 
             if ($columns) {
@@ -217,4 +218,3 @@ class CategoryController extends Controller
         };
     }
 }
-

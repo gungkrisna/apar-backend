@@ -22,9 +22,32 @@ class ProductController extends Controller
     {
         try {
             $filter = $request->query('filter');
+            $sortBy = $request->query('sortBy');
 
-            $query = Product::with(['images', 'unit', 'supplier', 'category'])
-                ->withoutTrashed()->orderBy('created_at', 'desc');
+            $query = Product::with(['images', 'unit', 'category'])
+                ->withoutTrashed();
+
+            if ($request->user() && $request->user()->can('access products')) {
+                $query->with('supplier');
+            } else {
+                $query->without('supplier');
+            }
+
+            // Apply sorting
+            switch ($sortBy) {
+                case 'latest':
+                    $query->orderBy('created_at', 'desc');
+                    break;
+                case 'highest_price':
+                    $query->orderBy('price', 'desc');
+                    break;
+                case 'lowest_price':
+                    $query->orderBy('price', 'asc');
+                    break;
+                default:
+                    $query->orderBy('created_at', 'desc'); // Default to latest
+                    break;
+            }
 
             if ($request->has('columns')) {
                 $query = $query->select(explode(',', $request->columns));
@@ -34,7 +57,7 @@ class ProductController extends Controller
                 $query->where('status', $request->status);
             }
 
-            if ($request->has('supplier_id')) {
+            if ($request->user() && $request->user()->can('access products') && $request->has('supplier_id')) {
                 $query->where('supplier_id', $request->supplier_id);
             }
 
@@ -43,24 +66,37 @@ class ProductController extends Controller
             }
 
             if ($filter !== null && $filter !== '') {
-                $query->where(function ($q) use ($filter) {
+                $query->where(function ($q) use ($filter, $request) {
                     $q->where('name', 'like', '%' . $filter . '%')
                         ->orWhere('serial_number', 'like', '%' . $filter . '%')
-                        ->orWhere('description', 'like', '%' . $filter . '%')
-                        ->orWhereHas('supplier', function ($q) use ($filter) {
+                        ->orWhere('description', 'like', '%' . $filter . '%');
+
+                    $user = $request->user();
+                    if ($user && $user->can('access products')) {
+                        $q->orWhereHas('supplier', function ($q) use ($filter) {
                             $q->where('name', 'like', '%' . $filter . '%');
-                        })
-                        ->orWhereHas('category', function ($q) use ($filter) {
-                            $q->where('name', 'like', '%' . $filter . '%');
-                        })
+                        });
+                    }
+
+                    $q->orWhereHas('category', function ($q) use ($filter) {
+                        $q->where('name', 'like', '%' . $filter . '%');
+                    })
                         ->orWhereHas('unit', function ($q) use ($filter) {
                             $q->where('name', 'like', '%' . $filter . '%');
                         });
                 });
             }
 
+            $products = $query->get();
+
+            if (!$request->user() || !$request->user()->can('access products')) {
+                foreach ($products as $product) {
+                    unset($product->supplier_id);
+                }
+            }
+
             if (!$request->has('pageIndex') && !$request->has('pageSize')) {
-                $responseData = $query->get();
+                $responseData = $products;
             } else {
                 $pageIndex = $request->query('pageIndex', 1);
                 $pageSize = $request->query('pageSize', $query->count());
@@ -118,10 +154,18 @@ class ProductController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
         try {
-            $product = Product::with('images', 'supplier', 'category')->find($id);
+            $product = Product::with('images', 'unit', 'category')
+                ->withoutTrashed()
+                ->find($id);
+
+            if ($request->user() && $request->user()->can('access products')) {
+                $product->load('supplier');
+            } else {
+                unset($product->supplier_id);
+            }
 
             if (!$product) {
                 return ResponseFormatter::error(404, 'Not Found');
@@ -319,4 +363,3 @@ class ProductController extends Controller
         };
     }
 }
-
