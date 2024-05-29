@@ -16,7 +16,7 @@ class CustomerController extends Controller
     /**
      * Display a listing of the resource.
      */
-     public function index(Request $request)
+    public function index(Request $request)
     {
         if ($request->user()->cannot('access customers')) {
             return ResponseFormatter::error('401', 'Unauthorized');
@@ -40,22 +40,23 @@ class CustomerController extends Controller
                         ->orWhere('email', 'like', '%' . $filter . '%')
                         ->orWhere('address', 'like', '%' . $filter . '%');
                 });
+                $filteredRowCount = $query->count();
             }
 
             if (!$request->has('pageIndex') && !$request->has('pageSize')) {
                 $responseData = $query->get();
             } else {
-            $pageIndex = $request->query('pageIndex', 1);
-            $pageSize = $request->query('pageSize', $query->count());
-            $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
+                $pageIndex = $request->query('pageIndex', 1);
+                $pageSize = $request->query('pageSize', $query->count());
+                $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
-            $responseData = [
-                'totalRowCount' => Customer::withoutTrashed()->count(),
-                'filteredRowCount' => $query->count(),
-                'pageCount' => $data->lastPage(),
-                'rows' => $data->items(),
-            ];
-        }
+                $responseData = [
+                    'totalRowCount' => Customer::withoutTrashed()->count(),
+                    'filteredRowCount' => $filteredRowCount ?? 0,
+                    'pageCount' => $data->lastPage(),
+                    'rows' => $data->items(),
+                ];
+            }
 
             return ResponseFormatter::success(data: $responseData);
         } catch (\Exception $e) {
@@ -68,6 +69,10 @@ class CustomerController extends Controller
      */
     public function store(StoreCustomerRequest $request)
     {
+        if ($request->user()->cannot('create customers')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+
         $validated = $request->validated();
 
         $customer = Customer::create([
@@ -108,6 +113,10 @@ class CustomerController extends Controller
      */
     public function update(UpdateCustomerRequest $request, string $id)
     {
+        if ($request->user()->cannot('update customers')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+
         try {
             $validated = $request->validated();
 
@@ -168,16 +177,18 @@ class CustomerController extends Controller
             return ResponseFormatter::error('401', 'Unauthorized');
         };
         $supplierIds = $request->input('id', []);
-        $startDate = $request->input('startDate', null);
-        $endDate = $request->input('endDate', null);
         $fileType = $request->input('fileType');
 
         switch ($fileType) {
             case 'CSV':
-                return Excel::raw(new CustomersExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                return Excel::raw(new CustomersExport(
+                    $supplierIds
+                ), \Maatwebsite\Excel\Excel::CSV);
                 break;
             case 'XLSX':
-                return Excel::raw(new CustomersExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                return Excel::raw(new CustomersExport(
+                    $supplierIds
+                ), \Maatwebsite\Excel\Excel::XLSX);
                 break;
         };
     }

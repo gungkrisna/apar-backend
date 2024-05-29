@@ -1,6 +1,5 @@
 <?php
 
-use App\Helpers\V1\ResponseFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\PasswordController;
@@ -38,7 +37,7 @@ use App\Http\Resources\UserResource;
 | Here is where you can register API routes for your application. These
 | routes are loaded by the RouteServiceProvider within a group which
 | is assigned the "api" middleware group. Enjoy building your API!
-|c
+|
 */
 
 Route::middleware(['auth:sanctum'])->group(function () {

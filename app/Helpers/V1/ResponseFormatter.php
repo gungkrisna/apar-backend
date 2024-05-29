@@ -6,7 +6,7 @@ class ResponseFormatter
 {
     protected static $response = [
         'code' => 200,
-        'status' => 'Success',
+        'status' => 'OK',
         'data' => null,
         'errors' => null
     ];

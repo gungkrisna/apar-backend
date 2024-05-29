@@ -17,14 +17,10 @@ class CustomersExport implements FromCollection, WithHeadings, WithColumnFormatt
     use Exportable;
 
     protected $customerIds;
-    protected $startDate;
-    protected $endDate;
 
-    public function __construct(array $customerIds = [], $startDate = null, $endDate = null)
+    public function __construct(array $customerIds = [])
     {
         $this->customerIds = $customerIds;
-        $this->startDate = $startDate;
-        $this->endDate = $endDate;
     }
 
     /**
@@ -36,14 +32,6 @@ class CustomersExport implements FromCollection, WithHeadings, WithColumnFormatt
 
         if (!empty($this->customerIds)) {
             $query->whereIn('id', $this->customerIds);
-        }
-
-        if (!empty($this->startDate)) {
-            $query->where('created_at', '>=', $this->startDate);
-        }
-
-        if (!empty($this->endDate)) {
-            $query->where('created_at', '<=', $this->endDate);
         }
 
         $columns = ["id", "company_name", "pic_name", "phone", "email", "address", "created_at", "updated_at"];

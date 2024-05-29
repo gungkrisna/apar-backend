@@ -17,14 +17,10 @@ class CategoriesExport implements FromCollection, WithHeadings, WithColumnFormat
     use Exportable;
 
     protected $categoryIds;
-    protected $startDate;
-    protected $endDate;
 
-    public function __construct(array $categoryIds = [], $startDate = null, $endDate = null)
+    public function __construct(array $categoryIds = [])
     {
         $this->categoryIds = $categoryIds;
-        $this->startDate = $startDate;
-        $this->endDate = $endDate;
     }
 
     /**
@@ -36,14 +32,6 @@ class CategoriesExport implements FromCollection, WithHeadings, WithColumnFormat
 
         if (!empty($this->categoryIds)) {
             $query->whereIn('id', $this->categoryIds);
-        }
-
-        if (!empty($this->startDate)) {
-            $query->where('created_at', '>=', $this->startDate);
-        }
-
-        if (!empty($this->endDate)) {
-            $query->where('created_at', '<=', $this->endDate);
         }
 
         $columns = ["id", "name", "description", "created_at", "updated_at"];

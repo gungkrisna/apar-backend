@@ -48,6 +48,7 @@ class CategoryController extends Controller
                 $query->where(function ($q) use ($filter) {
                     $q->where('name', 'like', '%' . $filter . '%');
                 });
+                $filteredRowCount = $query->count();
             }
 
             if (!$request->has('pageIndex') && !$request->has('pageSize')) {
@@ -59,7 +60,7 @@ class CategoryController extends Controller
 
                 $responseData = [
                     'totalRowCount' => Category::withoutTrashed()->count(),
-                    'filteredRowCount' => $query->count(),
+                    'filteredRowCount' => $filteredRowCount ?? 0,
                     'pageCount' => $data->lastPage(),
                     'rows' => $data->items(),
                 ];
@@ -76,6 +77,10 @@ class CategoryController extends Controller
      */
     public function store(StoreCategoryRequest $request)
     {
+        if ($request->user()->cannot('create categories')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+
         $validated = $request->validated();
 
         $category = Category::create([
@@ -128,6 +133,10 @@ class CategoryController extends Controller
      */
     public function update(UpdateCategoryRequest $request, $id)
     {
+        if ($request->user()->cannot('update categories')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+
         $validated = $request->validated();
 
         $category = Category::findOrFail($id);
@@ -203,16 +212,18 @@ class CategoryController extends Controller
             return ResponseFormatter::error('401', 'Unauthorized');
         };
         $supplierIds = $request->input('id', []);
-        $startDate = $request->input('startDate', null);
-        $endDate = $request->input('endDate', null);
         $fileType = $request->input('fileType');
 
         switch ($fileType) {
             case 'CSV':
-                return Excel::raw(new CategoriesExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                return Excel::raw(new CategoriesExport(
+                    $supplierIds
+                ), \Maatwebsite\Excel\Excel::CSV);
                 break;
             case 'XLSX':
-                return Excel::raw(new CategoriesExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                return Excel::raw(new CategoriesExport(
+                    $supplierIds
+                ), \Maatwebsite\Excel\Excel::XLSX);
                 break;
         };
     }

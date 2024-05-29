@@ -36,22 +36,23 @@ class UserController extends Controller
                         ->orWhere('phone', 'like', '%' . $filter . '%')
                         ->orWhere('email', 'like', '%' . $filter . '%');
                 });
+                $filteredRowCount = $query->count();
             }
 
             $query->with('roles.permissions');
 
             $data = $query->paginate(perPage: $pageSize ?? $query->count(), page: $pageIndex ?? 0);
-            
+
             $responseData = [
                 'totalRowCount' => User::count(),
-                'filteredRowCount' => $query->count(),
+                'filteredRowCount' => $filteredRowCount ?? 0,
                 'pageCount' => $data->lastPage(),
                 'rows' => UserResource::collection($data),
             ];
 
-            return ResponseFormatter::success(200, 'Success', $responseData);
+            return ResponseFormatter::success(200, 'OK', $responseData);
         } catch (\Exception $e) {
-            return ResponseFormatter::error(400, 'Failed', $e->getMessage());
+            return ResponseFormatter::error(400, 'Bad Request', $e->getMessage());
         }
     }
 

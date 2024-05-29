@@ -35,11 +35,11 @@ class UnitController extends Controller
                 $query->where(function ($q) use ($filter) {
                     $q->where('name', 'like', '%' . $filter . '%');
                 });
+                $filteredRowCount = $query->count();
             }
 
             if (!$request->has('pageIndex') && !$request->has('pageSize')) {
                 $responseData = $query->get();
-
             } else {
                 $pageIndex = $request->query('pageIndex', 1);
                 $pageSize = $request->query('pageSize', $query->count());
@@ -47,7 +47,7 @@ class UnitController extends Controller
 
                 $responseData = [
                     'totalRowCount' => Unit::withoutTrashed()->count(),
-                    'filteredRowCount' => $query->count(),
+                    'filteredRowCount' => $filteredRowCount ?? 0,
                     'pageCount' => $data->lastPage(),
                     'rows' => $data->items(),
                 ];
@@ -64,6 +64,10 @@ class UnitController extends Controller
      */
     public function store(StoreUnitRequest $request)
     {
+        if ($request->user()->cannot('create units')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        }
+
         $validated = $request->validated();
 
         $unit = Unit::create([
@@ -100,6 +104,10 @@ class UnitController extends Controller
      */
     public function update(UpdateUnitRequest $request, string $id)
     {
+        if ($request->user()->cannot('update units')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        };
+
         try {
             $validated = $request->validated();
 
@@ -155,16 +163,18 @@ class UnitController extends Controller
             return ResponseFormatter::error('401', 'Unauthorized');
         };
         $supplierIds = $request->input('id', []);
-        $startDate = $request->input('startDate', null);
-        $endDate = $request->input('endDate', null);
         $fileType = $request->input('fileType');
 
         switch ($fileType) {
             case 'CSV':
-                return Excel::raw(new UnitsExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                return Excel::raw(new UnitsExport(
+                    $supplierIds
+                ), \Maatwebsite\Excel\Excel::CSV);
                 break;
             case 'XLSX':
-                return Excel::raw(new UnitsExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                return Excel::raw(new UnitsExport(
+                    $supplierIds
+                ), \Maatwebsite\Excel\Excel::XLSX);
                 break;
         };
     }

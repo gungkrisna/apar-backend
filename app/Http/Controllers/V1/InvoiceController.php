@@ -63,6 +63,7 @@ class InvoiceController extends Controller
                         })
                         ->orWhere('description', 'like', '%' . $filter . '%');
                 });
+                $filteredRowCount = $query->count();
             }
 
 
@@ -78,7 +79,7 @@ class InvoiceController extends Controller
 
                 $responseData = [
                     'totalRowCount' => Invoice::count(),
-                    'filteredRowCount' => $query->count(),
+                    'filteredRowCount' => $filteredRowCount ?? 0,
                     'pageCount' => $data->lastPage(),
                     'rows' => $data->items(),
                 ];
@@ -95,6 +96,10 @@ class InvoiceController extends Controller
      */
     public function store(StoreInvoiceRequest $request)
     {
+        if ($request->user()->cannot('create invoices')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        }
+
         $validated = $request->validated();
 
         $invoice = Invoice::create([
@@ -117,8 +122,6 @@ class InvoiceController extends Controller
             $invoiceItem->unit_price = $invoiceItemData['unit_price'];
             $invoiceItem->quantity = $invoiceItemData['quantity'];
             $invoiceItem->total_price = $invoiceItemData['unit_price'] * $invoiceItemData['quantity'];
-
-            $product = Product::find($invoiceItemData['product_id']);
 
             $invoiceItem->save();
         }
@@ -164,6 +167,10 @@ class InvoiceController extends Controller
      */
     public function update(UpdateInvoiceRequest $request, $id)
     {
+        if ($request->user()->cannot('update invoices')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        }
+
         $validated = $request->validated();
 
         $invoice = Invoice::findOrFail($id);
@@ -322,9 +329,10 @@ class InvoiceController extends Controller
      */
     public function export(Request $request)
     {
-        if ($request->user()->cannot('access suppliers')) {
+        if ($request->user()->cannot('access invoices')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
+
         $productIds = $request->input('id', []);
         $customerId = $request->input('customerId', null);
         $status = $request->input('status', null);

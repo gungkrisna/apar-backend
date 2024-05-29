@@ -12,7 +12,7 @@ class CustomerTrashController extends Controller
     /**
      * Display a listing of the resource.
      */
-     public function index(Request $request)
+    public function index(Request $request)
     {
         if ($request->user()->cannot('access customers')) {
             return ResponseFormatter::error('401', 'Unauthorized');
@@ -36,22 +36,23 @@ class CustomerTrashController extends Controller
                         ->orWhere('email', 'like', '%' . $filter . '%')
                         ->orWhere('address', 'like', '%' . $filter . '%');
                 });
+                $filteredRowCount = $query->count();
             }
 
             if (!$request->has('pageIndex') && !$request->has('pageSize')) {
                 $responseData = $query->get();
             } else {
-            $pageIndex = $request->query('pageIndex', 1);
-            $pageSize = $request->query('pageSize', $query->count());
-            $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
+                $pageIndex = $request->query('pageIndex', 1);
+                $pageSize = $request->query('pageSize', $query->count());
+                $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
-            $responseData = [
-                'totalRowCount' => Customer::onlyTrashed()->count(),
-                'filteredRowCount' => $query->count(),
-                'pageCount' => $data->lastPage(),
-                'rows' => $data->items(),
-            ];
-        }
+                $responseData = [
+                    'totalRowCount' => Customer::onlyTrashed()->count(),
+                    'filteredRowCount' => $filteredRowCount ?? 0,
+                    'pageCount' => $data->lastPage(),
+                    'rows' => $data->items(),
+                ];
+            }
 
             return ResponseFormatter::success(data: $responseData);
         } catch (\Exception $e) {
@@ -101,7 +102,7 @@ class CustomerTrashController extends Controller
         }
     }
 
-     /**
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(Request $request)

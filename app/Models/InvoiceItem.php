@@ -18,10 +18,10 @@ class InvoiceItem extends Model
         'description',
         'quantity',
         'unit_price',
+        'total_price',
         'expiry_date',
     ];
 
-    protected $appends = ['total_price'];
     protected $casts = [
         'expiry_date' => 'datetime',
     ];

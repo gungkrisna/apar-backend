@@ -13,7 +13,7 @@ class SupplierTrashController extends Controller
     /**
      * Display a listing of the resource.
      */
-public function index(Request $request)
+    public function index(Request $request)
     {
         if ($request->user()->cannot('force delete suppliers')) {
             return ResponseFormatter::error('401', 'Unauthorized');
@@ -35,6 +35,7 @@ public function index(Request $request)
                         ->orWhere('email', 'like', '%' . $filter . '%')
                         ->orWhere('address', 'like', '%' . $filter . '%');
                 });
+                $filteredRowCount = $query->count();
             }
 
             if (!$request->has('pageIndex') && !$request->has('pageSize')) {
@@ -46,7 +47,7 @@ public function index(Request $request)
 
                 $responseData = [
                     'totalRowCount' => Supplier::onlyTrashed()->count(),
-                    'filteredRowCount' => $query->count(),
+                    'filteredRowCount' => $filteredRowCount ?? 0,
                     'pageCount' => $data->lastPage(),
                     'rows' => $data->items(),
                 ];

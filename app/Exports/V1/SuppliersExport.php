@@ -17,14 +17,10 @@ class SuppliersExport implements FromCollection, WithHeadings, WithColumnFormatt
     use Exportable;
 
     protected $supplierIds;
-    protected $startDate;
-    protected $endDate;
 
-    public function __construct(array $supplierIds = [], $startDate = null, $endDate = null)
+    public function __construct(array $supplierIds = [])
     {
         $this->supplierIds = $supplierIds;
-        $this->startDate = $startDate;
-        $this->endDate = $endDate;
     }
 
     /**
@@ -36,14 +32,6 @@ class SuppliersExport implements FromCollection, WithHeadings, WithColumnFormatt
 
         if (!empty($this->supplierIds)) {
             $query->whereIn('id', $this->supplierIds);
-        }
-
-        if (!empty($this->startDate)) {
-            $query->where('created_at', '>=', $this->startDate);
-        }
-
-        if (!empty($this->endDate)) {
-            $query->where('created_at', '<=', $this->endDate);
         }
 
         $columns = ["id", "name", "phone", "email", "address", "created_at", "updated_at"];

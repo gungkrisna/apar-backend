@@ -47,6 +47,7 @@ class CategoryTrashController extends Controller
                 $query->where(function ($q) use ($filter) {
                     $q->where('name', 'like', '%' . $filter . '%');
                 });
+                $filteredRowCount = $query->count();
             }
 
             if (!$request->has('pageIndex') && !$request->has('pageSize')) {
@@ -58,7 +59,7 @@ class CategoryTrashController extends Controller
 
                 $responseData = [
                     'totalRowCount' => Category::onlyTrashed()->count(),
-                    'filteredRowCount' => $query->count(),
+                    'filteredRowCount' => $filteredRowCount ?? 0,
                     'pageCount' => $data->lastPage(),
                     'rows' => $data->items(),
                 ];

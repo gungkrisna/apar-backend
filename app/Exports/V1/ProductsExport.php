@@ -21,17 +21,13 @@ class ProductsExport implements FromCollection, WithHeadings, WithColumnFormatti
     protected $status;
     protected $supplierId;
     protected $categoryId;
-    protected $startDate;
-    protected $endDate;
 
-    public function __construct(array $productIds = [], $status = null, $supplierId = null, $categoryId = null, $startDate = null, $endDate = null)
+    public function __construct(array $productIds = [], $status = null, $supplierId = null, $categoryId = null)
     {
         $this->productIds = $productIds;
         $this->status = $status;
         $this->supplierId = $supplierId;
         $this->categoryId = $categoryId;
-        $this->startDate = $startDate;
-        $this->endDate = $endDate;
     }
 
     /**
@@ -58,14 +54,6 @@ class ProductsExport implements FromCollection, WithHeadings, WithColumnFormatti
             $query->where('category_id', $this->categoryId);
         }
 
-        if (!empty($this->startDate)) {
-            $query->where('created_at', '>=', $this->startDate);
-        }
-
-        if (!empty($this->endDate)) {
-            $query->where('created_at', '<=', $this->endDate);
-        }
-
         // Transform the results into an array format matching the headings
         $data = $query->get()->map(function ($item) {
             return [
@@ -73,13 +61,13 @@ class ProductsExport implements FromCollection, WithHeadings, WithColumnFormatti
                 $item->status == 1 ? 'Aktif' : 'Nonaktif',
                 $item->serial_number,
                 $item->name,
-                $item->description,
+                strip_tags($item->description),
                 $item->stock,
                 $item->price,
                 $item->expiry_period,
                 $item->unit->name,
-                $item->supplier->name, 
-                $item->category->name, 
+                $item->supplier->name,
+                $item->category->name,
                 $item->created_at,
                 $item->updated_at,
             ];

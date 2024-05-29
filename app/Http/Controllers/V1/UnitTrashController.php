@@ -33,11 +33,11 @@ class UnitTrashController extends Controller
                 $query->where(function ($q) use ($filter) {
                     $q->where('name', 'like', '%' . $filter . '%');
                 });
+                $filteredRowCount = $query->count();
             }
 
             if (!$request->has('pageIndex') && !$request->has('pageSize')) {
                 $responseData = $query->get();
-
             } else {
                 $pageIndex = $request->query('pageIndex', 1);
                 $pageSize = $request->query('pageSize', $query->count());
@@ -45,7 +45,7 @@ class UnitTrashController extends Controller
 
                 $responseData = [
                     'totalRowCount' => Unit::onlyTrashed()->count(),
-                    'filteredRowCount' => $query->count(),
+                    'filteredRowCount' => $filteredRowCount ?? 0,
                     'pageCount' => $data->lastPage(),
                     'rows' => $data->items(),
                 ];

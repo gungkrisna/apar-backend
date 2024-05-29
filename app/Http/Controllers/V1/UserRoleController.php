@@ -16,9 +16,9 @@ class UserRoleController extends Controller
     {
         try {
             $data = Role::all()->pluck('name')->toArray();
-            return ResponseFormatter::success(200, 'Success', $data);
+            return ResponseFormatter::success(data: $data);
         } catch (\Exception $e) {
-            return ResponseFormatter::error(400, 'Failed', [$e->getMessage()]);
+            return ResponseFormatter::error(errors: [$e->getMessage()]);
         }
     }
 

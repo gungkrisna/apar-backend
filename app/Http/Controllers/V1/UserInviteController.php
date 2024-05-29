@@ -32,14 +32,14 @@ class UserInviteController extends Controller
         } catch (\Exception $e) {
             return ResponseFormatter::error(500, 'Failed to send invite', $e->getMessage());
         }
-        return ResponseFormatter::success(200, 'Success', $invitation);
+        return ResponseFormatter::success(data: $invitation);
     }
 
     public function show(string $inviteToken)
     {
         $data = Invitation::getInviteData($inviteToken);
         if ($data) {
-            return ResponseFormatter::success(200, 'Success', $data);
+            return ResponseFormatter::success(data: $data);
         } else {
             return ResponseFormatter::error(404, 'Not Found');
         }

@@ -34,7 +34,6 @@ class ProductController extends Controller
                 $query->where('status', '!=', 0);
             }
 
-            // Apply sorting
             switch ($sortBy) {
                 case 'latest':
                     $query->orderBy('created_at', 'desc');
@@ -46,7 +45,7 @@ class ProductController extends Controller
                     $query->orderBy('price', 'asc');
                     break;
                 default:
-                    $query->orderBy('created_at', 'desc'); // Default to latest
+                    $query->orderBy('created_at', 'desc');
                     break;
             }
 
@@ -85,6 +84,7 @@ class ProductController extends Controller
                             $q->where('name', 'like', '%' . $filter . '%');
                         });
                 });
+                $filteredRowCount = $query->count();
             }
 
             $products = $query->get();
@@ -104,7 +104,7 @@ class ProductController extends Controller
 
                 $responseData = [
                     'totalRowCount' => Product::withoutTrashed()->count(),
-                    'filteredRowCount' => $query->count(),
+                    'filteredRowCount' => $filteredRowCount ?? 0,
                     'pageCount' => $data->lastPage(),
                     'rows' => $data->items(),
                 ];
@@ -122,6 +122,10 @@ class ProductController extends Controller
      */
     public function store(StoreProductRequest $request)
     {
+        if ($request->user()->cannot('create products')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        }
+
         $validated = $request->validated();
 
         $product = Product::create([
@@ -209,6 +213,10 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, $id)
     {
+        if ($request->user()->cannot('update products')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        }
+
         $validated = $request->validated();
 
         $product = Product::findOrFail($id);
@@ -345,23 +353,31 @@ class ProductController extends Controller
      */
     public function export(Request $request)
     {
-        if ($request->user()->cannot('access suppliers')) {
+        if ($request->user()->cannot('access products')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
         $productIds = $request->input('id', []);
         $status = $request->input('status', null);
         $supplierId = $request->input('supplierId', null);
         $categoryId = $request->input('categoryId', null);
-        $startDate = $request->input('startDate', null);
-        $endDate = $request->input('endDate', null);
         $fileType = $request->input('fileType');
 
         switch ($fileType) {
             case 'CSV':
-                return Excel::raw(new ProductsExport($productIds, $status, $supplierId, $categoryId, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                return Excel::raw(new ProductsExport(
+                    $productIds,
+                    $status,
+                    $supplierId,
+                    $categoryId
+                ), \Maatwebsite\Excel\Excel::CSV);
                 break;
             case 'XLSX':
-                return Excel::raw(new ProductsExport($productIds, $status, $supplierId, $categoryId, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                return Excel::raw(new ProductsExport(
+                    $productIds,
+                    $status,
+                    $supplierId,
+                    $categoryId
+                ), \Maatwebsite\Excel\Excel::XLSX);
                 break;
         };
     }

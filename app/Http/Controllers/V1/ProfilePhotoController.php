@@ -31,7 +31,7 @@ class ProfilePhotoController extends Controller
         $user->photo()->save($image);
 
         return ResponseFormatter::success(data: [
-            'photo_url' => Storage::url($user->photo),
+            'photo_url' => Storage::url($path),
         ]);
     }
     /**

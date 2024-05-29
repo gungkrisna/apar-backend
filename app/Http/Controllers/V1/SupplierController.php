@@ -38,6 +38,7 @@ class SupplierController extends Controller
                         ->orWhere('email', 'like', '%' . $filter . '%')
                         ->orWhere('address', 'like', '%' . $filter . '%');
                 });
+                $filteredRowCount = $query->count();
             }
 
             if (!$request->has('pageIndex') && !$request->has('pageSize')) {
@@ -49,7 +50,7 @@ class SupplierController extends Controller
 
                 $responseData = [
                     'totalRowCount' => Supplier::withoutTrashed()->count(),
-                    'filteredRowCount' => $query->count(),
+                    'filteredRowCount' => $filteredRowCount ?? 0,
                     'pageCount' => $data->lastPage(),
                     'rows' => $data->items(),
                 ];
@@ -66,6 +67,10 @@ class SupplierController extends Controller
      */
     public function store(StoreSupplierRequest $request)
     {
+        if ($request->user()->cannot('create suppliers')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        }
+
         $validated = $request->validated();
 
         $supplier = Supplier::create([
@@ -105,6 +110,10 @@ class SupplierController extends Controller
      */
     public function update(UpdateSupplierRequest $request, string $id)
     {
+        if ($request->user()->cannot('update suppliers')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        }
+
         try {
             $validated = $request->validated();
 
@@ -164,16 +173,18 @@ class SupplierController extends Controller
             return ResponseFormatter::error('401', 'Unauthorized');
         };
         $supplierIds = $request->input('id', []);
-        $startDate = $request->input('startDate', null);
-        $endDate = $request->input('endDate', null);
         $fileType = $request->input('fileType');
 
         switch ($fileType) {
             case 'CSV':
-                return Excel::raw(new SuppliersExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
+                return Excel::raw(new SuppliersExport(
+                    $supplierIds
+                ), \Maatwebsite\Excel\Excel::CSV);
                 break;
             case 'XLSX':
-                return Excel::raw(new SuppliersExport($supplierIds, $startDate, $endDate), \Maatwebsite\Excel\Excel::XLSX);
+                return Excel::raw(new SuppliersExport(
+                    $supplierIds
+                ), \Maatwebsite\Excel\Excel::XLSX);
                 break;
         };
     }

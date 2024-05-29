@@ -33,9 +33,9 @@ class PurchaseController extends Controller
 
             if ($request->has('columns')) {
                 $query = $query = $query->select(explode(',', $request->columns));
-            } 
+            }
 
-           if ($filter !== null && $filter !== '') {
+            if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
                     $q->where('status', 'like', '%' . $filter . '%')
                         ->orWhere('purchase_number', 'like', '%' . $filter . '%')
@@ -53,22 +53,23 @@ class PurchaseController extends Controller
                         })
                         ->orWhere('description', 'like', '%' . $filter . '%');
                 });
-         }
+                $filteredRowCount = $query->count();
+            }
 
-        if (!$request->has('pageIndex') && !$request->has('pageSize')) {
+            if (!$request->has('pageIndex') && !$request->has('pageSize')) {
                 $responseData = $query->get();
-        } else {
-            $pageIndex = $request->query('pageIndex', 1);
-            $pageSize = $request->query('pageSize', $query->count());
-            $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
+            } else {
+                $pageIndex = $request->query('pageIndex', 1);
+                $pageSize = $request->query('pageSize', $query->count());
+                $data = $query->paginate($pageSize, ['*'], 'page', $pageIndex);
 
-            $responseData = [
-                'totalRowCount' => Purchase::count(),
-                'filteredRowCount' => $query->count(),
-                'pageCount' => $data->lastPage(),
-                'rows' => $data->items(),
-            ];
-        }
+                $responseData = [
+                    'totalRowCount' => Purchase::count(),
+                    'filteredRowCount' => $filteredRowCount ?? 0,
+                    'pageCount' => $data->lastPage(),
+                    'rows' => $data->items(),
+                ];
+            }
 
             return ResponseFormatter::success(data: $responseData);
         } catch (\Exception $e) {
@@ -76,11 +77,15 @@ class PurchaseController extends Controller
         }
     }
 
-     /**
+    /**
      * Store a newly created resource in storage.
      */
     public function store(StorePurchaseRequest $request)
     {
+        if ($request->user()->cannot('create purchases')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        }
+
         $validated = $request->validated();
 
         $purchase = Purchase::create([
@@ -130,7 +135,7 @@ class PurchaseController extends Controller
 
         try {
             $purchase = Purchase::with('images', 'supplier', 'purchaseItems', 'purchaseItems.product', 'purchaseItems.category')
-                        ->find($id);
+                ->find($id);
 
             if (!$purchase) {
                 return ResponseFormatter::error(404, 'Not Found');
@@ -147,6 +152,10 @@ class PurchaseController extends Controller
      */
     public function update(UpdatePurchaseRequest $request, $id)
     {
+        if ($request->user()->cannot('update purchases')) {
+            return ResponseFormatter::error('401', 'Unauthorized');
+        }
+
         $validated = $request->validated();
 
         $purchase = Purchase::findOrFail($id);
@@ -160,7 +169,7 @@ class PurchaseController extends Controller
             'description' => $validated['description'] ?? null,
             'supplier_id' => $validated['supplier_id']
         ]);
-        
+
         $currentItemIds = $purchase->purchaseItems()->pluck('id')->toArray();
 
         foreach ($validated['purchase_items'] as $purchaseItemData) {
@@ -183,27 +192,27 @@ class PurchaseController extends Controller
             PurchaseItem::whereIn('id', $itemsToDelete)->delete();
         }
 
-    if ($request->filled('images')) {
-        $images = $validated['images'];
+        if ($request->filled('images')) {
+            $images = $validated['images'];
 
-        $currImages = $purchase->images->pluck('id')->toArray();
-        $imagesToDelete = array_diff($currImages, $images);
+            $currImages = $purchase->images->pluck('id')->toArray();
+            $imagesToDelete = array_diff($currImages, $images);
 
-        foreach ($imagesToDelete as $imageId) {
-            $image = Image::find($imageId);
-            Storage::disk('public')->delete($image->path);
-            $image->delete();
+            foreach ($imagesToDelete as $imageId) {
+                $image = Image::find($imageId);
+                Storage::disk('public')->delete($image->path);
+                $image->delete();
+            }
+
+            foreach ($images as $imageId) {
+                $image = Image::find($imageId);
+                $image->collection_name = 'purchase_images';
+                $purchase->images()->save($image);
+            }
+        } else {
+            // empty images means delete all images if any
+            $purchase->images()->delete();
         }
-
-        foreach ($images as $imageId) {
-            $image = Image::find($imageId);
-            $image->collection_name = 'purchase_images';
-            $purchase->images()->save($image);
-        }
-    } else {
-        // empty images means delete all images if any
-        $purchase->images()->delete();
-    }
 
         return ResponseFormatter::success();
     }
@@ -219,7 +228,7 @@ class PurchaseController extends Controller
 
         $purchase = Purchase::findOrFail($purchase);
         $purchaseItems = $purchase->purchaseItems()->get();
- 
+
         foreach ($purchaseItems as $purchaseItem) {
             $purchaseItem->product->increment('stock', $purchaseItem->quantity);
         }
@@ -228,6 +237,7 @@ class PurchaseController extends Controller
 
         return ResponseFormatter::success();
     }
+
     /**
      * Generate purchase number.
      */
@@ -250,7 +260,6 @@ class PurchaseController extends Controller
 
             if ($lastOrderMonth == $month && $lastOrderYear == $year) {
                 $newOrderNumber = $prefix . $month . '/' . $year . '/' . (sprintf('%04d', $lastOrderNumberArray[4] + 1));
-
             }
         } else {
             $newOrderNumber = $prefix . $month . '/' . $year . '/0001';
@@ -270,7 +279,7 @@ class PurchaseController extends Controller
 
         try {
             $purchases = Purchase::whereIn('id', $request->id)->where('status', '!=', 1)->get();
-            
+
             if ($purchases->isEmpty()) {
                 return ResponseFormatter::error(400, 'Semua pembelian sudah disetujui.');
             } else {
@@ -290,7 +299,7 @@ class PurchaseController extends Controller
      */
     public function export(Request $request)
     {
-        if ($request->user()->cannot('access suppliers')) {
+        if ($request->user()->cannot('access purchases')) {
             return ResponseFormatter::error('401', 'Unauthorized');
         };
         $purchaseIds = $request->input('id', []);
@@ -311,7 +320,7 @@ class PurchaseController extends Controller
                     break;
             };
         } else {
-           switch ($fileType) {
+            switch ($fileType) {
                 case 'CSV':
                     return Excel::raw(new PurchaseItemsExport($purchaseIds, $supplierId, $status, $startDate, $endDate), \Maatwebsite\Excel\Excel::CSV);
                     break;
