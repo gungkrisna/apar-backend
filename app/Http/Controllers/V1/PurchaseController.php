@@ -250,22 +250,19 @@ class PurchaseController extends Controller
         $prefix = 'PO/INDOKA/';
         $month = now()->format('m');
         $year = now()->year;
-        $lastOrder = Purchase::latest()->first();
+        $purchaseNumber = $prefix . $month . '/' . $year . '/0001';
 
-        if ($lastOrder) {
-            $lastOrderNumber = $lastOrder->purchase_number;
-            $lastOrderNumberArray = explode('/', $lastOrderNumber);
-            $lastOrderMonth = $lastOrderNumberArray[2];
-            $lastOrderYear = $lastOrderNumberArray[3];
+        $lastPo = Purchase::latest()->first();
+        if ($lastPo) {
+            list(,, $lastPoMonth, $lastPoYear, $lastSequence) = explode('/', $lastPo->invoice_number);
 
-            if ($lastOrderMonth == $month && $lastOrderYear == $year) {
-                $newOrderNumber = $prefix . $month . '/' . $year . '/' . (sprintf('%04d', $lastOrderNumberArray[4] + 1));
+            if ($lastPoMonth == $month && $lastPoYear == $year) {
+                $sequenceNumber = (int)$lastSequence + 1;
+                $purchaseNumber = $prefix . $month . '/' . $year . '/' . sprintf('%04d', $sequenceNumber);
             }
-        } else {
-            $newOrderNumber = $prefix . $month . '/' . $year . '/0001';
         }
 
-        return ResponseFormatter::success(data: $newOrderNumber);
+        return ResponseFormatter::success(data: $purchaseNumber);
     }
 
     /**

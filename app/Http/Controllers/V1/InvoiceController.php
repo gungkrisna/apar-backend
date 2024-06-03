@@ -280,22 +280,19 @@ class InvoiceController extends Controller
         $prefix = 'INV/INDOKA/';
         $month = now()->format('m');
         $year = now()->year;
-        $lastOrder = Invoice::latest()->first();
+        $invoiceNumber = $prefix . $month . '/' . $year . '/0001';
 
+        $lastOrder = Invoice::latest()->first();
         if ($lastOrder) {
-            $lastOrderNumber = $lastOrder->invoice_number;
-            $lastOrderNumberArray = explode('/', $lastOrderNumber);
-            $lastOrderMonth = $lastOrderNumberArray[2];
-            $lastOrderYear = $lastOrderNumberArray[3];
+            list(,, $lastOrderMonth, $lastOrderYear, $lastSequence) = explode('/', $lastOrder->invoice_number);
 
             if ($lastOrderMonth == $month && $lastOrderYear == $year) {
-                $newOrderNumber = $prefix . $month . '/' . $year . '/' . (sprintf('%04d', $lastOrderNumberArray[4] + 1));
+                $sequenceNumber = (int)$lastSequence + 1;
+                $invoiceNumber = $prefix . $month . '/' . $year . '/' . sprintf('%04d', $sequenceNumber);
             }
-        } else {
-            $newOrderNumber = $prefix . $month . '/' . $year . '/0001';
         }
 
-        return ResponseFormatter::success(data: $newOrderNumber);
+        return ResponseFormatter::success(data: $invoiceNumber);
     }
 
     /**
@@ -311,7 +308,7 @@ class InvoiceController extends Controller
             $invoices = Invoice::whereIn('id', $request->id)->where('status', '!=', 1)->get();
 
             if ($invoices->isEmpty()) {
-                return ResponseFormatter::error(400, 'Semua pembelian sudah disetujui.');
+                return ResponseFormatter::error(400, 'Semua penjualan sudah disetujui.');
             } else {
                 $invoices->each(function ($invoice) {
                     $invoice->delete();
