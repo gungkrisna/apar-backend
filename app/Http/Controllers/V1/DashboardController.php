@@ -62,17 +62,29 @@ class DashboardController extends Controller
                     ->whereBetween('date', [$prevFromDate, $prevToDate])
                     ->count(),
 
-                'products_sold' => round(InvoiceItem::whereHas('invoice', function ($query) use ($fromDate, $toDate) {
-                    $query->where('status', 1)
-                        ->whereBetween('date', [$fromDate, $toDate]);
-                })->sum('quantity')),
-                'previous_products_sold' => round(InvoiceItem::whereHas('invoice', function ($query) use ($prevFromDate, $prevToDate) {
-                    $query->where('status', 1)
-                        ->whereBetween('date', [$prevFromDate, $prevToDate]);
-                })->sum('quantity')),
+                'products_sold' => round(InvoiceItem::whereHas(
+                    'invoice',
+                    function ($query) use ($fromDate, $toDate) {
+                        $query->where('status', 1)
+                            ->whereBetween('date', [$fromDate, $toDate]);
+                    }
+                )->sum('quantity')),
+                'previous_products_sold' => round(InvoiceItem::whereHas(
+                    'invoice',
+                    function ($query) use ($prevFromDate, $prevToDate) {
+                        $query->where('status', 1)
+                            ->whereBetween('date', [$prevFromDate, $prevToDate]);
+                    }
+                )->sum('quantity')),
 
-                'customers' => Customer::whereBetween('created_at', [$fromDate, $toDate])->count(),
-                'previous_customers' => Customer::whereBetween('created_at', [$prevFromDate, $prevToDate])->count(),
+                'customers' => Customer::whereBetween(
+                    'created_at',
+                    [$fromDate, $toDate]
+                )->count(),
+                'previous_customers' => Customer::whereBetween(
+                    'created_at',
+                    [$prevFromDate, $prevToDate]
+                )->count(),
 
                 'sales_timeseries' => $this->generateSalesTimeseries($fromDate, $toDate, $period),
             ];

@@ -282,11 +282,11 @@ class InvoiceController extends Controller
         $year = now()->year;
         $invoiceNumber = $prefix . $month . '/' . $year . '/0001';
 
-        $lastOrder = Invoice::latest()->first();
-        if ($lastOrder) {
-            list(,, $lastOrderMonth, $lastOrderYear, $lastSequence) = explode('/', $lastOrder->invoice_number);
+        $lastInv = Invoice::latest()->first();
+        if ($lastInv) {
+            list(,, $lastInvMonth, $lastInvYear, $lastSequence) = explode('/', $lastInv->invoice_number);
 
-            if ($lastOrderMonth == $month && $lastOrderYear == $year) {
+            if ($lastInvMonth == $month && $lastInvYear == $year) {
                 $sequenceNumber = (int)$lastSequence + 1;
                 $invoiceNumber = $prefix . $month . '/' . $year . '/' . sprintf('%04d', $sequenceNumber);
             }

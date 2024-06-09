@@ -254,7 +254,7 @@ class PurchaseController extends Controller
 
         $lastPo = Purchase::latest()->first();
         if ($lastPo) {
-            list(,, $lastPoMonth, $lastPoYear, $lastSequence) = explode('/', $lastPo->invoice_number);
+            list(,, $lastPoMonth, $lastPoYear, $lastSequence) = explode('/', $lastPo->purchase_number);
 
             if ($lastPoMonth == $month && $lastPoYear == $year) {
                 $sequenceNumber = (int)$lastSequence + 1;
