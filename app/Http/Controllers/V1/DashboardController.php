@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\Purchase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -38,30 +39,43 @@ class DashboardController extends Controller
             $prevFromDate = $fromDate->copy()->subDays($interval)->startOfDay();
             $prevToDate = $fromDate->copy()->subDays()->endOfDay();
 
+            //Revenue
+            $revenue = Invoice::where('status', 1)
+                ->whereBetween('date', [$fromDate, $toDate])
+                ->get()
+                ->sum('total');
+            $prev_revenue = Invoice::where('status', 1)
+                ->whereBetween('date', [$prevFromDate, $prevToDate])
+                ->get()
+                ->sum('total');
+
+            // Expense
+            $expense = Purchase::where('status', 1)
+                ->whereBetween('date', [$fromDate, $toDate])
+                ->get()
+                ->sum('total');
+            $prev_expense = Purchase::where('status', 1)
+                ->whereBetween('date', [$prevFromDate, $prevToDate])
+                ->get()
+                ->sum('total');
 
             $data = [
                 'fromDate' => $fromDate,
                 'toDate' => $toDate,
                 'prevFromDate' => $prevFromDate,
                 'prevToDate' => $prevToDate,
-
-                'revenue' => Invoice::where('status', 1)
-                    ->whereBetween('date', [$fromDate, $toDate])
-                    ->get()
-                    ->sum('total'),
-
-                'previous_revenue' => Invoice::where('status', 1)
-                    ->whereBetween('date', [$prevFromDate, $prevToDate])
-                    ->get()
-                    ->sum('total'),
-
+                'revenue' => $revenue,
+                'previous_revenue' => $prev_revenue,
+                'expense' => $expense,
+                'previous_expense' => $prev_expense,
+                'net_income' => $revenue - $expense,
+                'previous_net_income' => $prev_revenue - $prev_expense,
                 'approved_orders' => Invoice::where('status', 1)
                     ->whereBetween('date', [$fromDate, $toDate])
                     ->count(),
                 'previous_approved_orders' => Invoice::where('status', 1)
                     ->whereBetween('date', [$prevFromDate, $prevToDate])
                     ->count(),
-
                 'products_sold' => round(InvoiceItem::whereHas(
                     'invoice',
                     function ($query) use ($fromDate, $toDate) {
@@ -76,16 +90,6 @@ class DashboardController extends Controller
                             ->whereBetween('date', [$prevFromDate, $prevToDate]);
                     }
                 )->sum('quantity')),
-
-                'customers' => Customer::whereBetween(
-                    'created_at',
-                    [$fromDate, $toDate]
-                )->count(),
-                'previous_customers' => Customer::whereBetween(
-                    'created_at',
-                    [$prevFromDate, $prevToDate]
-                )->count(),
-
                 'sales_timeseries' => $this->generateSalesTimeseries($fromDate, $toDate, $period),
             ];
 
@@ -94,6 +98,7 @@ class DashboardController extends Controller
             return ResponseFormatter::error(400, 'Failed', $e->getMessage());
         }
     }
+
 
     private function generateSalesTimeseries($fromDate, $toDate, $period = 'monthly')
     {
