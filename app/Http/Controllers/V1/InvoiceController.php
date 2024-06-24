@@ -20,7 +20,7 @@ use Maatwebsite\Excel\Facades\Excel;
 class InvoiceController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the invoices.
      */
     public function index(Request $request)
     {
@@ -92,7 +92,7 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created invoice in storage.
      */
     public function store(StoreInvoiceRequest $request)
     {
@@ -140,7 +140,7 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified invoice.
      */
     public function show(Request $request, string $id)
     {
@@ -163,7 +163,7 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified invoice in storage.
      */
     public function update(UpdateInvoiceRequest $request, $id)
     {
@@ -234,7 +234,7 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Approve the specified resource.
+     * Approve the specified invoice.
      */
     public function approve(Request $request, $invoice)
     {
@@ -296,7 +296,7 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified invoice from storage.
      */
     public function destroy(Request $request)
     {
@@ -322,7 +322,7 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Export the specified resource from storage.
+     * Export the specified invoice from storage.
      */
     public function export(Request $request)
     {

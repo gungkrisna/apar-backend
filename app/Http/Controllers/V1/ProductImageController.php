@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 class ProductImageController extends Controller
 {
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created product image in storage.
      */
     public function store(StoreProductImageRequest $request)
     {
@@ -26,7 +26,7 @@ class ProductImageController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified product image from storage.
      */
     public function destroy($id)
     {

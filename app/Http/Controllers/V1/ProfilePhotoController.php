@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 class ProfilePhotoController extends Controller
 {
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created user profile photo in storage.
      */
     public function store(StoreProfilePhotoRequest $request)
     {
@@ -35,7 +35,7 @@ class ProfilePhotoController extends Controller
         ]);
     }
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified user profile photo from storage.
      */
     public function destroy()
     {

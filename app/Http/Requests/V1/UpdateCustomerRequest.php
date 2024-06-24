@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\V1;
 
+use App\Helpers\V1\ResponseFormatter;
 use App\Models\Customer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,9 +14,7 @@ class UpdateCustomerRequest extends FormRequest
      */
     public function authorize(): bool
     { 
-        $customer = Customer::find($this->route('customer'));
-
-        return !$customer->trashed() && $this->user()->can('update customers');
+        return $this->user()->can('update customers');
     }
 
     /**

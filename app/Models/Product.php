@@ -29,6 +29,41 @@ class Product extends Model
     //     return static::where('deleted_at', '<=', now()->subDays(90));
     // }
 
+    public static function generateSerialNumber()
+    {
+        $prefix = '200';
+        $randomNumber = mt_rand(100000000, 999999999); // 9-digit random number
+
+        // Calculate the check digit
+        $checkDigit = self::calculateEanCheckDigit($prefix . $randomNumber);
+
+        $eanCode = $prefix . $randomNumber . $checkDigit;
+
+        while (self::where('serial_number', $eanCode)->exists()) {
+            $randomNumber = mt_rand(100000000, 999999999);
+            $checkDigit = self::calculateEanCheckDigit($prefix . $randomNumber);
+            $eanCode = $prefix . $randomNumber . $checkDigit;
+        }
+
+        return $eanCode;
+    }
+
+    private static function calculateEanCheckDigit($eanWithoutCheckDigit)
+    {
+        $sum = 0;
+        $weight = 3;
+
+        for ($i = strlen($eanWithoutCheckDigit) - 1; $i >= 0; $i--) {
+            $sum += $weight * intval($eanWithoutCheckDigit[$i]);
+            $weight = 4 - $weight;
+        }
+
+        $checkDigit = (10 - ($sum % 10)) % 10;
+
+        return $checkDigit;
+    }
+
+
     private function num($num)
     {
         return intval($num) == $num ? intval($num) : $num;

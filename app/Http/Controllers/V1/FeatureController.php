@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 class FeatureController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the category feature.
      */
     public function index()
     {
@@ -19,7 +19,7 @@ class FeatureController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created category features in storage.
      */
     public function store(Request $request)
     {
@@ -34,7 +34,7 @@ class FeatureController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified category features.
      */
     public function show(string $id)
     {
@@ -48,7 +48,7 @@ class FeatureController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified category features in storage.
      */
     public function update(Request $request, $id)
     {
@@ -70,7 +70,7 @@ class FeatureController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified category features from storage.
      */
     public function destroy(string $id)
     {

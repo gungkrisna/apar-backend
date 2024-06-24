@@ -31,6 +31,7 @@ class SupplierTrashController extends Controller
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
                     $q->where('name', 'like', '%' . $filter . '%')
+                        ->orWhere('category', 'like', '%' . $filter . '%')
                         ->orWhere('phone', 'like', '%' . $filter . '%')
                         ->orWhere('email', 'like', '%' . $filter . '%')
                         ->orWhere('address', 'like', '%' . $filter . '%');

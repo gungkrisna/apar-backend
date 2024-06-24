@@ -14,7 +14,7 @@ use Maatwebsite\Excel\Facades\Excel;
 class SupplierController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the suppliers.
      */
     public function index(Request $request)
     {
@@ -34,6 +34,7 @@ class SupplierController extends Controller
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
                     $q->where('name', 'like', '%' . $filter . '%')
+                        ->orWhere('category', 'like', '%' . $filter . '%')
                         ->orWhere('phone', 'like', '%' . $filter . '%')
                         ->orWhere('email', 'like', '%' . $filter . '%')
                         ->orWhere('address', 'like', '%' . $filter . '%');
@@ -63,7 +64,7 @@ class SupplierController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created supplier in storage.
      */
     public function store(StoreSupplierRequest $request)
     {
@@ -75,6 +76,7 @@ class SupplierController extends Controller
 
         $supplier = Supplier::create([
             'name' => $validated['name'],
+            'category' => $validated['category'],
             'phone' => $validated['phone'],
             'email' => $validated['email'],
             'address' => $validated['address']
@@ -84,7 +86,7 @@ class SupplierController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified supplier.
      */
     public function show(Request $request, string $id)
     {
@@ -106,7 +108,7 @@ class SupplierController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified supplier in storage.
      */
     public function update(UpdateSupplierRequest $request, string $id)
     {
@@ -124,6 +126,7 @@ class SupplierController extends Controller
             }
 
             $supplier->name = $validated['name'];
+            $supplier->category = $validated['category'];
             $supplier->phone = $validated['phone'];
             $supplier->email = $validated['email'];
             $supplier->address = $validated['address'];
@@ -137,7 +140,7 @@ class SupplierController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified supplier from storage.
      */
     public function destroy(Request $request)
     {
@@ -165,7 +168,7 @@ class SupplierController extends Controller
     }
 
     /**
-     * Export the specified resource from storage.
+     * Export the specified supplier from storage.
      */
     public function export(Request $request)
     {

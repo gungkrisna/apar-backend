@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 class CategoryImageController extends Controller
 {
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created category image in storage.
      */
     public function store(StoreCategoryImageRequest $request)
     {
@@ -26,7 +26,7 @@ class CategoryImageController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified category image from storage.
      */
     public function destroy($id)
     {

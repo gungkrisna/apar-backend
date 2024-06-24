@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 class PurchaseImageController extends Controller
 {
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created purchase image in storage.
      */
     public function store(StorePurchaseImageRequest $request)
     {
@@ -26,7 +26,7 @@ class PurchaseImageController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified purchase image from storage.
      */
     public function destroy($id)
     {

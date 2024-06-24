@@ -8,8 +8,10 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Purchase;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -23,6 +25,7 @@ class DashboardController extends Controller
             $fromDate = $request->input('from_date');
             $toDate = $request->input('to_date');
             $period = $request->input('period');
+            $rankMonthlyRevenueByLeast = $request->input('rank_monthly_revenue_by_least', false);
 
             if (empty($fromDate) || empty($toDate)) {
                 $oldestInvoiceDate = Invoice::orderBy('created_at', 'asc')->first()
@@ -59,6 +62,35 @@ class DashboardController extends Controller
                 ->get()
                 ->sum('total');
 
+            //Monthly Revenue
+            $invoices = Invoice::where('status', 1)
+                ->whereBetween('date', [$fromDate, $toDate])
+                ->get();
+
+            $period = array_reverse(CarbonPeriod::create($fromDate, '1 month', $toDate)->toArray());
+            $monthlyRevenue = collect();
+
+            foreach ($period as $date) {
+                $formattedMonth = $date->locale('id')->isoFormat('MMMM YYYY');
+                $monthlyRevenue[$formattedMonth] = 0;
+            }
+
+            $invoices->groupBy(function($invoice) {
+                return Carbon::parse($invoice->date)->format('Y-m'); 
+            })->each(function($group, $month) use (&$monthlyRevenue) {
+                $total = $group->sum(function($invoice) {
+                    return $invoice->total;
+                });
+                $formattedMonth = Carbon::createFromFormat('Y-m', $month)->locale('id')->isoFormat('MMMM YYYY');
+                $monthlyRevenue[$formattedMonth] = $total;
+            });
+            
+            if ($rankMonthlyRevenueByLeast) {
+                $monthlyRevenue = $monthlyRevenue->sort();
+            } else {
+                $monthlyRevenue = $monthlyRevenue->sortDesc();
+            }
+            
             $data = [
                 'fromDate' => $fromDate,
                 'toDate' => $toDate,
@@ -90,6 +122,7 @@ class DashboardController extends Controller
                             ->whereBetween('date', [$prevFromDate, $prevToDate]);
                     }
                 )->sum('quantity')),
+                'monthly_revenue' => $monthlyRevenue,
                 'sales_timeseries' => $this->generateSalesTimeseries($fromDate, $toDate, $period),
             ];
 

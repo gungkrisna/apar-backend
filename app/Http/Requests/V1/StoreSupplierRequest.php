@@ -26,6 +26,7 @@ class StoreSupplierRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', Rule::unique('suppliers')->ignore($supplier)],
+            'category' => ['required', 'string'],
             'phone' => ['required', 'string', 'regex:/^([0-9\s\-\+\(\)]*)$/', 'min:9'],
             'email' => ['required', 'string', 'email', 'max:255'],
             'address' => ['required', 'string']

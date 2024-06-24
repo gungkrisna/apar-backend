@@ -16,7 +16,7 @@ use Maatwebsite\Excel\Facades\Excel;
 class ProductController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the products.
      */
     public function index(Request $request)
     {
@@ -118,7 +118,7 @@ class ProductController extends Controller
 
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created product in storage.
      */
     public function store(StoreProductRequest $request)
     {
@@ -156,7 +156,7 @@ class ProductController extends Controller
 
 
     /**
-     * Display the specified resource.
+     * Display the specified product.
      */
     public function show(Request $request, string $id)
     {
@@ -209,7 +209,7 @@ class ProductController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified product in storage.
      */
     public function update(UpdateProductRequest $request, $id)
     {
@@ -289,39 +289,13 @@ class ProductController extends Controller
             return ResponseFormatter::error('401', 'Unauthorized');
         }
 
-        $prefix = '200';
-        $randomNumber = mt_rand(100000000, 999999999); // 9-digit random number
-
-        // Calculate the check digit
-        $checkDigit = $this->calculateEanCheckDigit($prefix . $randomNumber);
-
-        $eanCode = $prefix . $randomNumber . $checkDigit;
-
-        while (Product::where('serial_number', $eanCode)->exists()) {
-            $randomNumber = mt_rand(100000000, 999999999);
-            $eanCode = $prefix . $randomNumber . $checkDigit;
-        }
+        $eanCode = Product::generateSerialNumber();
 
         return ResponseFormatter::success(data: $eanCode);
     }
 
-    private function calculateEanCheckDigit($eanWithoutCheckDigit)
-    {
-        $sum = 0;
-        $weight = 3;
-
-        for ($i = strlen($eanWithoutCheckDigit) - 1; $i >= 0; $i--) {
-            $sum += $weight * intval($eanWithoutCheckDigit[$i]);
-            $weight = 4 - $weight;
-        }
-
-        $checkDigit = (10 - ($sum % 10)) % 10;
-
-        return $checkDigit;
-    }
-
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified product from storage.
      */
     public function destroy(Request $request)
     {
@@ -349,7 +323,7 @@ class ProductController extends Controller
     }
 
     /**
-     * Export the specified resource from storage.
+     * Export the specified product from storage.
      */
     public function export(Request $request)
     {

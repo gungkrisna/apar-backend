@@ -18,7 +18,7 @@ use Maatwebsite\Excel\Facades\Excel;
 class PurchaseController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the purchases.
      */
     public function index(Request $request)
     {
@@ -78,7 +78,7 @@ class PurchaseController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created purchase in storage.
      */
     public function store(StorePurchaseRequest $request)
     {
@@ -125,7 +125,7 @@ class PurchaseController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified purchase.
      */
     public function show(Request $request, string $id)
     {
@@ -148,7 +148,7 @@ class PurchaseController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified purchase in storage.
      */
     public function update(UpdatePurchaseRequest $request, $id)
     {
@@ -218,7 +218,7 @@ class PurchaseController extends Controller
     }
 
     /**
-     * Approve the specified resource.
+     * Approve the specified purchase.
      */
     public function approve(Request $request, $purchase)
     {
@@ -266,7 +266,7 @@ class PurchaseController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified purchase from storage.
      */
     public function destroy(Request $request)
     {
@@ -292,7 +292,7 @@ class PurchaseController extends Controller
     }
 
     /**
-     * Export the specified resource from storage.
+     * Export the specified purchase from storage.
      */
     public function export(Request $request)
     {

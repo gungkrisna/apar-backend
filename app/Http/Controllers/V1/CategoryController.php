@@ -17,7 +17,7 @@ use Maatwebsite\Excel\Facades\Excel;
 class CategoryController extends Controller
 {
     /**
-     * Display a listing of the resource.c
+     * Display a listing of the categories.
      */
     public function index(Request $request)
     {
@@ -73,7 +73,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created category in storage.
      */
     public function store(StoreCategoryRequest $request)
     {
@@ -111,7 +111,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified category.
      */
     public function show(Request $request, string $id)
     {
@@ -129,7 +129,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified category in storage.
      */
     public function update(UpdateCategoryRequest $request, $id)
     {
@@ -177,7 +177,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified category from storage.
      */
     public function destroy(Request $request)
     {
@@ -204,7 +204,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Export the specified resource from storage.
+     * Export the specified category from storage.
      */
     public function export(Request $request)
     {

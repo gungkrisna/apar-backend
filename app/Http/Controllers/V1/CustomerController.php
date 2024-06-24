@@ -14,7 +14,7 @@ use Maatwebsite\Excel\Facades\Excel;
 class CustomerController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the customers.
      */
     public function index(Request $request)
     {
@@ -65,7 +65,7 @@ class CustomerController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created customer in storage.
      */
     public function store(StoreCustomerRequest $request)
     {
@@ -87,7 +87,7 @@ class CustomerController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified customer.
      */
     public function show(Request $request, string $id)
     {
@@ -109,7 +109,7 @@ class CustomerController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified customer in storage.
      */
     public function update(UpdateCustomerRequest $request, string $id)
     {
@@ -120,7 +120,7 @@ class CustomerController extends Controller
         try {
             $validated = $request->validated();
 
-            $customer = Customer::find($id);
+            $customer = Customer::withoutTrashed()->find($id);
 
             if (!$customer) {
                 return ResponseFormatter::error(404, 'Customer not found');
@@ -141,7 +141,7 @@ class CustomerController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified customer from storage.
      */
     public function destroy(Request $request)
     {
@@ -169,7 +169,7 @@ class CustomerController extends Controller
     }
 
     /**
-     * Export the specified resource from storage.
+     * Export the specified customer from storage.
      */
     public function export(Request $request)
     {

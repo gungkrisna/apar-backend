@@ -14,7 +14,7 @@ use Maatwebsite\Excel\Facades\Excel;
 class UnitController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the units.
      */
     public function index(Request $request)
     {
@@ -60,7 +60,7 @@ class UnitController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created unit in storage.
      */
     public function store(StoreUnitRequest $request)
     {
@@ -78,7 +78,7 @@ class UnitController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified unit.
      */
     public function show(Request $request, string $id)
     {
@@ -100,7 +100,7 @@ class UnitController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified unit in storage.
      */
     public function update(UpdateUnitRequest $request, string $id)
     {
@@ -128,7 +128,7 @@ class UnitController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified unit from storage.
      */
     public function destroy(Request $request)
     {
@@ -155,7 +155,7 @@ class UnitController extends Controller
     }
 
     /**
-     * Export the specified resource from storage.
+     * Export the specified unit from storage.
      */
     public function export(Request $request)
     {

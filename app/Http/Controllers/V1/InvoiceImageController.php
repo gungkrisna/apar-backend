@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Storage;
 class InvoiceImageController extends Controller
 {
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created invoice image in storage.
      */
     public function store(StoreInvoiceImageRequest $request)
     {
@@ -27,7 +27,7 @@ class InvoiceImageController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified invoice image from storage.
      */
     public function destroy($id)
     {

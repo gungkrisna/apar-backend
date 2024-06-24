@@ -30,6 +30,7 @@ class UpdateSupplierRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', Rule::unique('suppliers')->ignore($supplier)],
+            'category' => ['required', 'string'],
             'phone' => ['required', 'string', 'regex:/^([0-9\s\-\+\(\)]*)$/', 'min:9'],
             'email' => ['required', 'string', 'email', 'max:255'],
             'address' => ['required', 'string']
@@ -42,6 +43,8 @@ class UpdateSupplierRequest extends FormRequest
             'name.required' => 'Nama perusahaan wajib diisi.',
             'name.string' => 'Nama perusahaan harus berupa string.',
             'name.unique' => 'Nama perusahaan sudah tersimpan sebagai supplier.',
+            'category.required' => 'Kategori perusahaan supplier wajib diisi.',
+            'category.string' => 'Kategori perusahaan supplier harus berupa string.',
             'phone.required' => 'Nomor telepon wajib diisi.',
             'phone.string' => 'Nomor telepon harus berupa string.',
             'phone.regex' => 'Format nomor telepon tidak valid.',
