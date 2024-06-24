@@ -62,6 +62,8 @@ class DashboardController extends Controller
                 ->get()
                 ->sum('total');
 
+            $salesTimeseries = $this->generateSalesTimeseries($fromDate, $toDate, $period);
+
             //Monthly Revenue
             $invoices = Invoice::where('status', 1)
                 ->whereBetween('date', [$fromDate, $toDate])
@@ -122,8 +124,8 @@ class DashboardController extends Controller
                             ->whereBetween('date', [$prevFromDate, $prevToDate]);
                     }
                 )->sum('quantity')),
+                'sales_timeseries' => $salesTimeseries,
                 'monthly_revenue' => $monthlyRevenue,
-                'sales_timeseries' => $this->generateSalesTimeseries($fromDate, $toDate, $period),
             ];
 
             return ResponseFormatter::success(200, 'OK', $data);
