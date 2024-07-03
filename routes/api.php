@@ -151,6 +151,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/image', 'store')->name('image.store');
             Route::delete('/image/{id}', 'destroy')->name('image.destroy');
         });
+        
         Route::controller(ProductTrashController::class)->group(function () {
             Route::get('/trash', 'index')->name('trash.index');
             Route::put('/trash', 'restore')->name('trash.restore');

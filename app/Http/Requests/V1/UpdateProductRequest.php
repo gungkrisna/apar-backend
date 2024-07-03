@@ -55,7 +55,6 @@ class UpdateProductRequest extends FormRequest
             'price.required' => 'Harga produk harus diisi.',
             'price.numeric' => 'Harga produk harus berupa angka.',
             'price.min' => 'Harga produk tidak boleh kurang dari 0.',
-            'expiry_period.numeric' => 'Periode kedaluwarsa harus berupa angka.',
             'unit_id.required' => 'Unit produk harus diisi.',
             'unit_id.exists' => 'Unit produk tidak valid.',
             'supplier_id.required' => 'Supplier produk harus diisi.',

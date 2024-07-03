@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\V1;
 
+use App\Helpers\V1\ResponseFormatter;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 
@@ -20,10 +21,10 @@ class StoreProductImageRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
-    public function rules(): array
+    public function rules()
     {
         return [
-            'images.*' => 'required|image',
+            'image' => 'required|image',
         ];
     }
 
@@ -35,8 +36,8 @@ class StoreProductImageRequest extends FormRequest
     public function messages()
     {
         return [
-            'images.*.required' => 'Produk wajib memiliki gambar.',
-            'images.*.image' => 'File yang diunggah harus berupa gambar.'
+            'image.required' => 'Pilih file gambar yang akan diunggah.',
+            'image.image' => 'File yang diunggah harus berupa gambar.',
         ];
     }
 }

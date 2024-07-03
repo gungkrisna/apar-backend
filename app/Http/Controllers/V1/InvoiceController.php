@@ -11,7 +11,6 @@ use App\Http\Requests\V1\UpdateInvoiceRequest;
 use App\Models\Image;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
-use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -31,7 +30,7 @@ class InvoiceController extends Controller
         try {
             $filter = $request->query('filter');
 
-            $query = Invoice::with(['images', 'customer', 'invoiceItems'])->orderBy('created_at', 'desc');
+            $query = Invoice::with(['images', 'customer', 'invoiceItems', 'createdBy'])->orderBy('created_at', 'desc');
 
             if ($request->has('status')) {
                 $query->where('status', $request->status);
@@ -149,7 +148,7 @@ class InvoiceController extends Controller
         }
 
         try {
-            $invoice = Invoice::with('images', 'customer', 'invoiceItems', 'invoiceItems.product', 'invoiceItems.category')
+            $invoice = Invoice::with('images', 'customer', 'invoiceItems', 'invoiceItems.product', 'invoiceItems.category', 'createdBy')
                 ->find($id);
 
             if (!$invoice) {
@@ -230,7 +229,7 @@ class InvoiceController extends Controller
             $invoice->images()->delete();
         }
 
-        return ResponseFormatter::success();
+        return ResponseFormatter::success(data: $invoice);
     }
 
     /**
@@ -277,20 +276,7 @@ class InvoiceController extends Controller
             return ResponseFormatter::error('401', 'Unauthorized');
         };
 
-        $prefix = 'INV/INDOKA/';
-        $month = now()->format('m');
-        $year = now()->year;
-        $invoiceNumber = $prefix . $month . '/' . $year . '/0001';
-
-        $lastInv = Invoice::latest()->first();
-        if ($lastInv) {
-            list(,, $lastInvMonth, $lastInvYear, $lastSequence) = explode('/', $lastInv->invoice_number);
-
-            if ($lastInvMonth == $month && $lastInvYear == $year) {
-                $sequenceNumber = (int)$lastSequence + 1;
-                $invoiceNumber = $prefix . $month . '/' . $year . '/' . sprintf('%04d', $sequenceNumber);
-            }
-        }
+        $invoiceNumber = Invoice::generateInvoiceNumber();
 
         return ResponseFormatter::success(data: $invoiceNumber);
     }
@@ -308,7 +294,7 @@ class InvoiceController extends Controller
             $invoices = Invoice::whereIn('id', $request->id)->where('status', '!=', 1)->get();
 
             if ($invoices->isEmpty()) {
-                return ResponseFormatter::error(400, 'Semua penjualan sudah disetujui.');
+                return ResponseFormatter::error(400, 'Penjualan tidak ditemukan atau telah disetujui.');
             } else {
                 $invoices->each(function ($invoice) {
                     $invoice->delete();

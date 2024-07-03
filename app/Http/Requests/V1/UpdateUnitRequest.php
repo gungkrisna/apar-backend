@@ -28,7 +28,7 @@ class UpdateUnitRequest extends FormRequest
         $unit = $this->route('unit');
 
         return [
-            'name' => ['required', 'string', Rule::unique('units')->ignore($unit)],
+            'name' => ['required', 'string', Rule::unique('units')->whereNull('deleted_at')->ignore($unit)],
         ];
     }
 

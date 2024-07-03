@@ -17,6 +17,7 @@ class UniqueInvitationEmail implements ValidationRule
     {
         // Check if there is any active invitation with the same email
         $exists = Invitation::where('email', $value)
+            ->where('accepted', 0) // Only invitations that are not accepted
             ->where('expired_at', '>', now()) // Only non-expired invitations
             ->exists();
 

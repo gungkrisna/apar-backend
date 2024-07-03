@@ -22,6 +22,26 @@ class Invoice extends Model
 
     protected $appends = ['subtotal', 'total'];
 
+    public static function generateInvoiceNumber()
+    {
+        $prefix = 'INV/INDOKA/';
+        $month = now()->format('m');
+        $year = now()->year;
+        $invoiceNumber = $prefix . $month . '/' . $year . '/0001';
+
+        $lastInv = Invoice::latest()->first();
+        if ($lastInv) {
+            list(,, $lastInvMonth, $lastInvYear, $lastSequence) = explode('/', $lastInv->invoice_number);
+
+            if ($lastInvMonth == $month && $lastInvYear == $year) {
+                $sequenceNumber = (int)$lastSequence + 1;
+                $invoiceNumber = $prefix . $month . '/' . $year . '/' . sprintf('%04d', $sequenceNumber);
+            }
+        }
+        
+        return $invoiceNumber;
+    }
+    
     public function getSubtotalAttribute()
     {
         $subtotal = 0;
@@ -52,5 +72,10 @@ class Invoice extends Model
     public function invoiceItems()
     {
         return $this->hasMany(InvoiceItem::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by')->withTrashed();
     }
 }

@@ -3,10 +3,12 @@
 namespace Database\Factories;
 
 use App\Models\Category;
+use App\Models\Image;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Unit;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Product>
@@ -32,5 +34,26 @@ class ProductFactory extends Factory
             'category_id' => Category::pluck('id')->random(),
             'expiry_period' => fake()->randomElement([0, 6, 12, 24, 36, 48, 60]),
         ];
+    }
+
+    public function configure()
+    {
+        return $this->afterCreating(function (Product $product) {
+            for ($i = 0; $i < 3; $i++) {
+                $url = fake()->imageUrl(640, 480, 'products', true);
+                $contents = file_get_contents($url);
+
+                $fileName = 'images/products/' . uniqid() . '.jpg';
+
+                Storage::disk('public')->put($fileName, $contents);
+
+                $image = new Image([
+                    'path' => $fileName,
+                    'collection_name' => 'product_images',
+                ]);
+
+                $product->images()->save($image);
+            }
+        });
     }
 }

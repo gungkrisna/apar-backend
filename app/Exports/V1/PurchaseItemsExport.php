@@ -55,7 +55,7 @@ class PurchaseItemsExport implements FromCollection, WithHeadings, WithColumnFor
 
         if (!empty($this->supplierId)) {
             $query->whereHas('purchase', function ($q) {
-                $q->where('supplierId', $this->supplierId);
+                $q->where('supplier_id', $this->supplierId);
             });
         }
 

@@ -35,8 +35,8 @@ class StoreCategoryImageRequest extends FormRequest
     public function messages()
     {
         return [
-            'photo.required' => 'Pilih file gambar yang akan diunggah.',
-            'photo.image' => 'File yang diunggah harus berupa gambar.',
+            'image.required' => 'Pilih file gambar yang akan diunggah.',
+            'image.image' => 'File yang diunggah harus berupa gambar.',
         ];
     }
 }

@@ -17,10 +17,31 @@ class Purchase extends Model
         'discount',
         'tax',
         'description',
-        'supplier_id'
+        'supplier_id',
+        'created_by',
     ];
 
     protected $appends = ['subtotal', 'total'];
+
+    public static function generatePurchaseNumber()
+    {
+        $prefix = 'PO/INDOKA/';
+        $month = now()->format('m');
+        $year = now()->year;
+        $purchaseNumber = $prefix . $month . '/' . $year . '/0001';
+
+        $lastPo = Purchase::latest()->first();
+        if ($lastPo) {
+            list(,, $lastPoMonth, $lastPoYear, $lastSequence) = explode('/', $lastPo->purchase_number);
+
+            if ($lastPoMonth == $month && $lastPoYear == $year) {
+                $sequenceNumber = (int)$lastSequence + 1;
+                $purchaseNumber = $prefix . $month . '/' . $year . '/' . sprintf('%04d', $sequenceNumber);
+            }
+        }
+
+        return $purchaseNumber;
+    }
 
     public function getSubtotalAttribute()
     {
@@ -52,5 +73,10 @@ class Purchase extends Model
     public function purchaseItems()
     {
         return $this->hasMany(PurchaseItem::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by')->withTrashed();
     }
 }

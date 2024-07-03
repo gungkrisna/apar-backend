@@ -29,7 +29,7 @@ class PurchaseController extends Controller
         try {
             $filter = $request->query('filter');
 
-            $query = Purchase::with(['images', 'supplier', 'purchaseItems'])->orderBy('created_at', 'desc');
+            $query = Purchase::with(['images', 'supplier', 'purchaseItems', 'createdBy'])->orderBy('created_at', 'desc');
 
             if ($request->has('columns')) {
                 $query = $query = $query->select(explode(',', $request->columns));
@@ -95,7 +95,8 @@ class PurchaseController extends Controller
             'discount' => $validated['discount'] ?? null,
             'tax' => $validated['tax'] ?? null,
             'description' => $validated['description'] ?? null,
-            'supplier_id' => $validated['supplier_id']
+            'supplier_id' => $validated['supplier_id'],
+            'created_by' => $request->user()->id,
         ]);
 
         foreach ($validated['purchase_items'] as $purchaseItemData) {
@@ -134,7 +135,7 @@ class PurchaseController extends Controller
         }
 
         try {
-            $purchase = Purchase::with('images', 'supplier', 'purchaseItems', 'purchaseItems.product', 'purchaseItems.category')
+            $purchase = Purchase::with('images', 'supplier', 'purchaseItems', 'purchaseItems.product', 'purchaseItems.category', 'createdBy')
                 ->find($id);
 
             if (!$purchase) {
@@ -214,7 +215,7 @@ class PurchaseController extends Controller
             $purchase->images()->delete();
         }
 
-        return ResponseFormatter::success();
+        return ResponseFormatter::success(data: $purchase);
     }
 
     /**
@@ -247,20 +248,7 @@ class PurchaseController extends Controller
             return ResponseFormatter::error('401', 'Unauthorized');
         };
 
-        $prefix = 'PO/INDOKA/';
-        $month = now()->format('m');
-        $year = now()->year;
-        $purchaseNumber = $prefix . $month . '/' . $year . '/0001';
-
-        $lastPo = Purchase::latest()->first();
-        if ($lastPo) {
-            list(,, $lastPoMonth, $lastPoYear, $lastSequence) = explode('/', $lastPo->purchase_number);
-
-            if ($lastPoMonth == $month && $lastPoYear == $year) {
-                $sequenceNumber = (int)$lastSequence + 1;
-                $purchaseNumber = $prefix . $month . '/' . $year . '/' . sprintf('%04d', $sequenceNumber);
-            }
-        }
+        $purchaseNumber = Purchase::generatePurchaseNumber();
 
         return ResponseFormatter::success(data: $purchaseNumber);
     }
@@ -278,7 +266,7 @@ class PurchaseController extends Controller
             $purchases = Purchase::whereIn('id', $request->id)->where('status', '!=', 1)->get();
 
             if ($purchases->isEmpty()) {
-                return ResponseFormatter::error(400, 'Semua pembelian sudah disetujui.');
+                return ResponseFormatter::error(400, 'Pembelian tidak ditemukan atau telah disetujui.');
             } else {
                 $purchases->each(function ($purchase) {
                     $purchase->delete();

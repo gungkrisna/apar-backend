@@ -40,10 +40,9 @@ class UpdateCustomerRequest extends FormRequest
         return [
             'company_name.required' => 'Nama perusahaan wajib diisi.',
             'company_name.string' => 'Nama perusahaan harus berupa string.',
-            'company_name.unique' => 'Nama perusahaan sudah tersimpan sebagai supplier.',
+            'company_name.unique' => 'Nama perusahaan sudah tersimpan sebagai customer.',
             'pic_name.required' => 'Nama person in contact wajib diisi.',
             'pic_name.string' => 'Nama  person in contact harus berupa string.',
-            'pic_name.unique' => 'Nama  person in contact sudah tersimpan sebagai supplier.',
             'phone.required' => 'Nomor telepon wajib diisi.',
             'phone.regex' => 'Format nomor telepon tidak valid.',
             'phone.min' => 'Nomor telepon harus memiliki setidaknya 9 karakter.',

@@ -23,6 +23,7 @@ class SupplierFactory extends Factory
 
         return [
             'name' => fake()->unique()->company(),
+            'category' => fake()->unique()->word(),
             'phone' => $this->generateIndonesianPhoneNumber($faker, $mobileNetworkPrefixes),
             'email' => fake()->unique()->companyEmail(),
             'address' => fake()->unique()->address(),

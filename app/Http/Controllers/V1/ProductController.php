@@ -234,6 +234,8 @@ class ProductController extends Controller
 
         if ($request->has('expiry_period')) {
             $product->update(['expiry_period' => $validated['expiry_period']]);
+        } else {
+            $product->update(['expiry_period' => null]);
         }
 
         if ($request->filled('images')) {
