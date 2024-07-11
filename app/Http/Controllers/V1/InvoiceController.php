@@ -108,7 +108,8 @@ class InvoiceController extends Controller
             'discount' => $validated['discount'] ?? 0,
             'tax' => $validated['tax'] ?? 0,
             'description' => $validated['description'] ?? null,
-            'customer_id' => $validated['customer_id']
+            'customer_id' => $validated['customer_id'],
+            'created_by' => $request->user()->id
         ]);
 
         foreach ($validated['invoice_items'] as $invoiceItemData) {

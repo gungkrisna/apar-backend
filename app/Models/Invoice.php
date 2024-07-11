@@ -17,7 +17,8 @@ class Invoice extends Model
         'discount',
         'tax',
         'description',
-        'customer_id'
+        'customer_id',
+        'created_by',
     ];
 
     protected $appends = ['subtotal', 'total'];
@@ -38,10 +39,10 @@ class Invoice extends Model
                 $invoiceNumber = $prefix . $month . '/' . $year . '/' . sprintf('%04d', $sequenceNumber);
             }
         }
-        
+
         return $invoiceNumber;
     }
-    
+
     public function getSubtotalAttribute()
     {
         $subtotal = 0;

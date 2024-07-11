@@ -96,7 +96,7 @@ class PurchaseController extends Controller
             'tax' => $validated['tax'] ?? null,
             'description' => $validated['description'] ?? null,
             'supplier_id' => $validated['supplier_id'],
-            'created_by' => $request->user()->id,
+            'created_by' => $request->user()->id
         ]);
 
         foreach ($validated['purchase_items'] as $purchaseItemData) {
