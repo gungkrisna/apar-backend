@@ -44,6 +44,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'deleted_at' => 'datetime',
         'password' => 'hashed',
     ];
 
@@ -60,7 +61,7 @@ class User extends Authenticatable
     {
         return $this->morphOne(Image::class, 'imageable')->where('collection_name', 'profile_photo');
     }
-    
+
     /**
      * MustVerifyEmail attribute
      *

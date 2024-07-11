@@ -23,12 +23,10 @@ class UserController extends Controller
         try {
             $filter = $request->query('filter');
 
-            $query = User::orderBy('created_at', 'desc');
+            $query = User::query();
 
-            if ($request->has('columns')) {
-                $query = $query->select(explode(',', $request->columns));
-            }
-
+            $query->withTrashed()->orderBy('created_at', 'desc');
+            $query->with('roles.permissions');
 
             if ($filter !== null && $filter !== '') {
                 $query->where(function ($q) use ($filter) {
@@ -38,8 +36,6 @@ class UserController extends Controller
                 });
                 $filteredRowCount = $query->count();
             }
-
-            $query->with('roles.permissions');
 
             $data = $query->paginate(perPage: $pageSize ?? $query->count(), page: $pageIndex ?? 0);
 

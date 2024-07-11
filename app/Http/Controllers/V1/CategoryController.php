@@ -38,6 +38,7 @@ class CategoryController extends Controller
                 $query->with('features');
                 $selectColumns = array_diff($selectColumns, ['features']);
             }
+
             $query->withoutTrashed()->orderBy('created_at', 'desc');
 
             if ($columns) {

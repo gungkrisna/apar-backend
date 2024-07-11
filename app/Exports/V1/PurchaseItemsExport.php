@@ -2,7 +2,6 @@
 
 namespace App\Exports\V1;
 
-use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\Exportable;
@@ -89,6 +88,7 @@ class PurchaseItemsExport implements FromCollection, WithHeadings, WithColumnFor
                 $item->purchase->supplier->email,
                 $item->purchase->supplier->phone,
                 $item->purchase->supplier->address,
+                $item->createdBy->name,
                 $item->created_at,
                 $item->updated_at,
             ];
@@ -118,6 +118,7 @@ class PurchaseItemsExport implements FromCollection, WithHeadings, WithColumnFor
             'Email Supplier',
             'Telepon Supplier',
             'Alamat Supplier',
+            'Dibuat Oleh',
             'Tanggal Dibuat',
             'Terakhir Diperbarui',
         ];

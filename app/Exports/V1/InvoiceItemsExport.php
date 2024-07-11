@@ -90,6 +90,7 @@ class InvoiceItemsExport implements FromCollection, WithHeadings, WithColumnForm
                 $item->invoice->customer->email,
                 $item->invoice->customer->phone,
                 $item->invoice->customer->address,
+                $item->invoice->createdBy->name,
                 $item->invoice->created_at,
                 $item->invoice->updated_at,
             ];
@@ -116,10 +117,11 @@ class InvoiceItemsExport implements FromCollection, WithHeadings, WithColumnForm
             'Catatan Produk',
             'Catatan Invoice',
             'Nama Perusahaan',
-            'Person in Contact',
+            'Person in Charge',
             'Email Perusahaan',
             'Telepon Perusahaan',
             'Alamat Perusahaan',
+            'Dibuat Oleh',
             'Tanggal Dibuat',
             'Terakhir Diperbarui',
         ];

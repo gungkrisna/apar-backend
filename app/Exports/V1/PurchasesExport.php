@@ -77,6 +77,7 @@ class PurchasesExport implements FromCollection, WithHeadings, WithColumnFormatt
                 $item->supplier->email,
                 $item->supplier->phone,
                 $item->supplier->address,
+                $item->createdBy->name,
                 $item->created_at,
                 $item->updated_at,
             ];
@@ -104,6 +105,7 @@ class PurchasesExport implements FromCollection, WithHeadings, WithColumnFormatt
             'Email Supplier',
             'Telepon Supplier',
             'Alamat Supplier',
+            'Dibuat Oleh',
             'Tanggal Dibuat',
             'Terakhir Diperbarui',
         ];

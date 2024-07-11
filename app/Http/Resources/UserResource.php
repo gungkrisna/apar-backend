@@ -20,9 +20,9 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'email' => $this->email,
             'photo' => $this->photo,
-            'email_verified_at' => $this->email_verified_at,
             'role' => $this->getRoleNames()[0] ?? null,
             'permissions' => $this->getAllPermissions()->pluck('name'),
+            'deleted_at' => $this->deleted_at,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
